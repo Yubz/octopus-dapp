@@ -1,0 +1,13 @@
+@use "./app.scss";
+@use "./pages/monitor/monitor.module.scss";
+@use "./pages/explore/explore.module.scss";
+@use "./ui/layout/layout.module.scss";
+@use "./ui/positions-table/positions-table.module.scss";
+@use "./ui/position-card/position-card.module.scss";
+@use "./ui/header/header.module.scss";
+
+html {
+  background: #fff
+    linear-gradient(135deg, #3d164c 0%, #191a44eb 50%, #21828c 100%);
+  background-attachment: fixed;
+}
