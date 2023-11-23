@@ -5,7 +5,7 @@ export interface Bounds {
   upper: number;
 }
 
-export interface Position {
+export interface PositionEkubo {
   bounds: Bounds;
   id: number;
   image: string;

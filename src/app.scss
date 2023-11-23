@@ -1,0 +1,14 @@
+.MuiPaginationItem-outlined {
+	border-color: #76afcc !important;
+	color: #76afcc !important;
+}
+
+.Mui-selected {
+	background-color: #76afcc !important;
+	color: #171a1c !important;
+
+	&.hover {
+		background-color: #76afcc !important;
+		color: #171a1c !important;
+	}
+}
