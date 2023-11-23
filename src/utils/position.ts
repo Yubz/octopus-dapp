@@ -9,7 +9,7 @@ import { GetTokenInfoRequest, GetTokenInfoResult } from '../models/ekubo/smartco
 import { PositionDto } from '../models/dto/position.dto';
 
 export const getPositionsExplore = async (): Promise<Array<PositionUi>> => {
-	const positions: Array<PositionDto> = await fetch(`${process.env.REACT_APP_OCTOPUS_API_URL}/position`).then((res) => res.json());
+	const positions: Array<PositionDto> = await fetch(`${process.env.REACT_APP_OCTOPUS_API_URL}position`).then((res) => res.json());
 	const tokens = await getTokens();
 
 	return positions.map((position) => map(position, tokens)) as Array<PositionUi>;
