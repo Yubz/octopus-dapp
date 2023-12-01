@@ -1,0 +1,34 @@
+.quote-card {
+	max-width: 50%;
+}
+
+.sell-token-bloc,
+.buy-token-bloc {
+	border: 1px solid #76afcc;
+	border-radius: 8px;
+	padding: 16px;
+
+	.input {
+		display: flex;
+		flex-direction: row;
+	}
+
+	.infos {
+		display: flex;
+		flex-direction: row;
+		margin-top: 10px;
+	}
+
+	.select-token-button {
+		display: flex;
+		.token-logo {
+			margin-right: 10px;
+		}
+	}
+}
+
+.token-modal {
+	.token-info {
+		margin-left: 2rem;
+	}
+}

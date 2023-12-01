@@ -4,7 +4,11 @@ import './index.scss';
 import App from './app';
 import reportWebVitals from './reportWebVitals';
 import { CssVarsProvider as JoyCssVarsProvider, extendTheme } from '@mui/joy/styles';
-import { experimental_extendTheme as materialExtendTheme, Experimental_CssVarsProvider as MaterialCssVarsProvider, THEME_ID as MATERIAL_THEME_ID } from '@mui/material/styles';
+import {
+	experimental_extendTheme as materialExtendTheme,
+	Experimental_CssVarsProvider as MaterialCssVarsProvider,
+	THEME_ID as MATERIAL_THEME_ID,
+} from '@mui/material/styles';
 
 const materialTheme = materialExtendTheme();
 
