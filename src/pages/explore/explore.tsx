@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { PositionsTable, PositionRowProps } from '../../ui/positions-table/positions-table';
-import { getPositionsExplore } from '../../utils/position';
+import { getPositionsExplore } from '../../services/position.service';
 
 export function Explore() {
 	const [positions, setPositions] = useState<Array<PositionRowProps>>([]);
@@ -10,21 +10,21 @@ export function Explore() {
 	}, []);
 
 	async function init() {
-		const positionsUi = await getPositionsExplore();
-		const positionsTable: Array<PositionRowProps> = positionsUi.map((positionUi) => {
+		const positions = await getPositionsExplore();
+		const positionsTable: Array<PositionRowProps> = positions.map((position) => {
 			return {
-				id: positionUi.id,
-				owner: positionUi.owner,
-				inRange: positionUi.inRange,
-				token0Symbol: positionUi.token0Symbol,
-				token1Symbol: positionUi.token1Symbol,
-				fee: positionUi.fee,
-				tickSpacing: positionUi.tickSpacing,
-				amount: positionUi.totalCurrentAmount,
-				pnl: positionUi.totalPnl,
-				feeApr: positionUi.feeApr,
-				totalApr: positionUi.totalApr,
-				durationInDays: positionUi.durationPositionInDays,
+				id: position.id,
+				owner: position.owner,
+				inRange: position.inRange,
+				token0Symbol: position.token0Symbol,
+				token1Symbol: position.token1Symbol,
+				fee: position.fee,
+				tickSpacing: position.tickSpacing,
+				amountUsd: position.amountUsd,
+				pnlUsd: position.pnlUsd,
+				feeApr: position.feeApr,
+				apr: position.apr,
+				durationInDays: position.durationInDays,
 			};
 		});
 		setPositions(positionsTable);

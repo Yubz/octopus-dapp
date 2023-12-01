@@ -14,10 +14,10 @@ export interface PositionRowProps {
 	token1Symbol: string;
 	fee: number;
 	tickSpacing: number;
-	amount: number;
-	pnl: number;
+	amountUsd: number;
+	pnlUsd: number;
 	feeApr: number;
-	totalApr: number;
+	apr: number;
 	durationInDays: number;
 }
 
@@ -88,15 +88,15 @@ export function PositionsTable(positionsTableProps: PositionsTableProps) {
 										{new Intl.NumberFormat('en-US', {
 											style: 'currency',
 											currency: 'USD',
-										}).format(position.pnl)}
+										}).format(position.pnlUsd)}
 									</td>
-									<td>{(position.totalApr * 100).toFixed(2)}%</td>
+									<td>{(position.apr * 100).toFixed(2)}%</td>
 									<td>{(position.feeApr * 100).toFixed(2)}%</td>
 									<td>
 										{new Intl.NumberFormat('en-US', {
 											style: 'currency',
 											currency: 'USD',
-										}).format(position.amount)}
+										}).format(position.amountUsd)}
 									</td>
 									<td>
 										<Typography level="body-xs" fontWeight="lg">
