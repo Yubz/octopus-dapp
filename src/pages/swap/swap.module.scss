@@ -1,16 +1,24 @@
-.quote-card {
-	max-width: 50%;
+.quote-card,
+.routes-card {
+	width: 50%;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	background-color: rgba(0, 0, 0, 0.4) !important;
 }
 
 .sell-token-bloc,
 .buy-token-bloc {
-	border: 1px solid #76afcc;
 	border-radius: 8px;
 	padding: 16px;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	background-color: rgba(0, 0, 0, 0.4) !important;
 
 	.input {
 		display: flex;
 		flex-direction: row;
+
+		.MuiInput-root {
+			background-color: rgba(0, 0, 0, 0) !important;
+		}
 	}
 
 	.infos {
@@ -30,5 +38,23 @@
 .token-modal {
 	.token-info {
 		margin-left: 2rem;
+	}
+}
+
+.extra-infos {
+	text-align: right;
+	margin-left: auto;
+}
+
+.output-amount {
+	margin-left: 80px;
+}
+
+.routes-card {
+	.aggregator-route {
+		background-color: rgba(0, 0, 0, 0.4) !important;
+		&.selected {
+			background: linear-gradient(93deg, #181e2d, #181e2d) padding-box, linear-gradient(93deg, rgba(56, 145, 166, 0.7), rgba(146, 88, 166, 0.7)) border-box;
+		}
 	}
 }

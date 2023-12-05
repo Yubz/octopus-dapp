@@ -20,7 +20,7 @@ import { fetchQuotes } from '@avnu/avnu-sdk';
 import { BigNumber } from '@ethersproject/bignumber';
 import { Router as FibrousRouter, RouteSuccess } from 'fibrous-router-sdk';
 import { parseUnits, formatUnits } from 'ethers';
-import { KeyboardArrowDown, ImportExport } from '@mui/icons-material';
+import { KeyboardArrowDown, ImportExport, LocalGasStation } from '@mui/icons-material';
 
 interface Token {
 	decimals: number;
@@ -31,6 +31,14 @@ interface Token {
 	hidden: boolean;
 }
 
+interface SwapRoute {
+	outputAmount: number;
+	outputAmountUsd: number;
+	outputAmountWithGasUsd: number;
+	gasFeesUsd: number;
+	aggregator: 'Avnu' | 'Fibrous';
+}
+
 export function Swap() {
 	const [sellToken, setSellToken] = useState<Token>();
 	const [sellTokenAmount, setSellTokenAmount] = useState<number>(0);
@@ -39,11 +47,14 @@ export function Swap() {
 
 	const [buyToken, setBuyToken] = useState<Token>();
 	const [buyTokenAmount, setBuyTokenAmount] = useState<number>(0);
-	const [buyTokenAmountUsd, setBuyTokenAmountUsd] = useState<number>();
+	const [buyTokenAmountUsdAfterGas, setBuyTokenAmountUsdAfterGas] = useState<number>();
 	const [buyTokenWalletAmount, setBuyTokenWalletAmount] = useState<number>();
 
 	const [tokens, setTokens] = useState<Array<Token>>([]);
 	const [openTokenModal, setOpenTokenModal] = useState<'buy' | 'sell'>();
+
+	const [swapRoutes, setSwapRoutes] = useState<Array<SwapRoute>>([]);
+	const [aggregator, setAggregator] = useState<'Fibrous' | 'Avnu'>();
 
 	useEffect(() => {
 		const timeOutId = setTimeout(() => fetchAggrQuotes(), 500);
@@ -62,8 +73,9 @@ export function Swap() {
 	async function fetchAggrQuotes() {
 		if (sellTokenAmount === 0) {
 			setBuyTokenAmount(0);
-			setBuyTokenAmountUsd(0);
+			setBuyTokenAmountUsdAfterGas(0);
 			setSellTokenAmountUsd(undefined);
+			setSwapRoutes([]);
 		} else if (sellToken && sellTokenAmount && buyToken) {
 			const params = {
 				sellTokenAddress: sellToken.l2_token_address,
@@ -71,20 +83,41 @@ export function Swap() {
 				sellAmount: BigNumber.from(parseUnits(sellTokenAmount.toString(), sellToken.decimals)).toBigInt(),
 				//takerAddress: '',
 			};
-			const quotes = await fetchQuotes(params);
-			setBuyTokenAmount(Number(formatUnits(quotes[0].buyAmount, buyToken.decimals)));
-			setSellTokenAmountUsd(quotes[0].sellAmountInUsd);
+			const avnuQuotes = await fetchQuotes(params);
+			//setBuyTokenAmount(Number(formatUnits(quotes[0].buyAmount, buyToken.decimals)));
+			//setSellTokenAmountUsd(quotes[0].sellAmountInUsd);
 
 			//await executeSwap(account, quotes[0]);
 
 			const inputAmount = BigNumber.from(parseUnits(sellTokenAmount.toString(), sellToken.decimals)); // for 1 Ether
 			const router = new FibrousRouter();
-			const route = (await router.getBestRoute(
+			const fibrousRoute = (await router.getBestRoute(
 				inputAmount, // amount
 				sellToken.l2_token_address, // token input
 				buyToken.l2_token_address, // token output
 			)) as RouteSuccess;
-			console.log(formatUnits(route.outputAmount, buyToken.decimals));
+
+			const swapRoutes = [];
+			swapRoutes.push({
+				aggregator: 'Avnu',
+				outputAmount: Number(formatUnits(avnuQuotes[0].buyAmount, buyToken.decimals)),
+				outputAmountUsd: avnuQuotes[0].buyAmountInUsd,
+				outputAmountWithGasUsd: avnuQuotes[0].buyAmountInUsd - avnuQuotes[0].gasFeesInUsd,
+				gasFeesUsd: avnuQuotes[0].gasFeesInUsd,
+			} as SwapRoute);
+			const outputAmount = Number(formatUnits(fibrousRoute.outputAmount, buyToken.decimals));
+			const outputAmountUsd = outputAmount * fibrousRoute.outputToken.price;
+			const gasFeesUsd = fibrousRoute.estimatedGasUsed ? Number(formatUnits(fibrousRoute.estimatedGasUsed, buyToken.decimals)) : 0;
+			swapRoutes.push({
+				aggregator: 'Fibrous',
+				outputAmount: outputAmount,
+				outputAmountUsd: outputAmountUsd,
+				outputAmountWithGasUsd: outputAmountUsd - gasFeesUsd,
+				gasFeesUsd: gasFeesUsd,
+			} as SwapRoute);
+			swapRoutes.sort((a, b) => b.outputAmount - a.outputAmount);
+			setSwapRoutes(swapRoutes);
+			selectSwapRoute(swapRoutes[0]);
 		}
 	}
 
@@ -97,16 +130,19 @@ export function Swap() {
 		setOpenTokenModal(undefined);
 	}
 
+	function selectSwapRoute(swapRoute: SwapRoute) {
+		setBuyTokenAmount(swapRoute.outputAmount);
+		setBuyTokenAmountUsdAfterGas(swapRoute.outputAmountUsd);
+		setAggregator(swapRoute.aggregator);
+	}
+
+	function pourcentageDifference(value: number, compareWith: number) {
+		return (100 * Math.abs(value - compareWith)) / ((value + compareWith) / 2);
+	}
+
 	return (
-		<>
-			<Card
-				className="quote-card"
-				variant="soft"
-				sx={{
-					border: '1px solid',
-					borderColor: '#76afcc',
-				}}
-			>
+		<div style={{ display: 'flex', flexDirection: 'row', gap: '24px' }}>
+			<Card className="quote-card" variant="soft">
 				<CardContent orientation="vertical" sx={{ position: 'relative', gap: '10px' }}>
 					<div className="sell-token-bloc">
 						<Typography fontWeight="sm" fontSize="sm" lineHeight="28px" sx={{ marginBottom: '10px' }}>
@@ -207,6 +243,19 @@ export function Swap() {
 							</Button>
 						</div>
 						<div className="infos">
+							<Typography fontWeight="sm" fontSize="sm" lineHeight="28px" minHeight="28px">
+								{buyTokenAmountUsdAfterGas ? (
+									<>
+										≈{' '}
+										{new Intl.NumberFormat('en-US', {
+											style: 'currency',
+											currency: 'USD',
+										}).format(Number(buyTokenAmountUsdAfterGas))}
+									</>
+								) : (
+									<></>
+								)}
+							</Typography>
 							<Typography fontWeight="sm" fontSize="sm" lineHeight="28px" sx={{ marginLeft: 'auto' }} minHeight="28px">
 								{buyTokenWalletAmount && <>Balance: {buyTokenWalletAmount}</>}
 							</Typography>
@@ -236,7 +285,7 @@ export function Swap() {
 					}}
 				>
 					<ModalClose variant="soft" sx={{ m: 1 }} />
-					<Typography component="h2" id="modal-title" level="h4" textColor="inherit" fontWeight="lg" mb={1}>
+					<Typography fontWeight="lg" fontSize="lg" id="modal-title">
 						Select a token
 					</Typography>
 					<List sx={{ maxHeight: 'calc(100% - 2rem)', overflowY: 'scroll', '--ListDivider-gap': 0 }}>
@@ -261,7 +310,61 @@ export function Swap() {
 					</List>
 				</Sheet>
 			</Modal>
-		</>
+			<Card className="routes-card" variant="soft">
+				<CardContent orientation="vertical" sx={{ gap: '10px' }}>
+					<Typography fontWeight="lg" fontSize="lg" lineHeight="28px" sx={{ marginBottom: '10px' }}>
+						Select a route to perform a swap
+					</Typography>
+					<List sx={{ gap: '10px' }}>
+						{swapRoutes.map((swapRoute, index) => (
+							<ListItemButton
+								className={aggregator === swapRoute.aggregator ? 'aggregator-route selected' : 'aggregator-route'}
+								sx={{ borderRadius: '8px', marginRight: '10px' }}
+								onClick={() => selectSwapRoute(swapRoute)}
+							>
+								{swapRoute.aggregator === 'Avnu' ? (
+									<img alt="logo" src="/images/aggregator/avnu.svg" width="80"></img>
+								) : (
+									<img alt="logo" src="/images/aggregator/fibrous.svg" width="80"></img>
+								)}
+								<div className="output-amount">
+									<Typography fontWeight="lg" fontSize="lg">
+										{swapRoute.outputAmount.toFixed(4)} {buyToken?.symbol}
+									</Typography>
+									<Typography fontWeight="sm" fontSize="sm" fontStyle="italic">
+										≈{' '}
+										{new Intl.NumberFormat('en-US', {
+											style: 'currency',
+											currency: 'USD',
+										}).format(swapRoute.outputAmountWithGasUsd)}
+									</Typography>
+								</div>
+								<div className="extra-infos">
+									{index === 0 ? (
+										<Typography fontWeight="lg" fontSize="sm" color="success">
+											BEST
+										</Typography>
+									) : (
+										<Typography fontWeight="lg" fontSize="sm" color="danger">
+											-{pourcentageDifference(swapRoute.outputAmountWithGasUsd, swapRoutes[0].outputAmountWithGasUsd).toFixed(2)}%
+										</Typography>
+									)}
+									<Typography fontWeight="sm" fontSize="sm" fontStyle="italic">
+										<LocalGasStation sx={{ width: '20px', height: '20px', marginRight: '2px', verticalAlign: 'sub' }}></LocalGasStation>
+										{swapRoute.gasFeesUsd > 0
+											? new Intl.NumberFormat('en-US', {
+													style: 'currency',
+													currency: 'USD',
+											  }).format(Number(swapRoute.gasFeesUsd.toFixed(4)))
+											: 'Unknown'}{' '}
+									</Typography>
+								</div>
+							</ListItemButton>
+						))}
+					</List>
+				</CardContent>
+			</Card>
+		</div>
 	);
 }
 
