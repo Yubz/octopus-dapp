@@ -35,7 +35,7 @@ export function PositionsTable(positionsTableProps: PositionsTableProps) {
 	}, [positionsTableProps]);
 
 	const minimizeAddress = (address: string): string => {
-		return address.substring(0, 5) + '...' + address.slice(-4);
+		return address.substring(0, 6) + '...' + address.slice(-4);
 	};
 
 	const pageChange = (event: React.ChangeEvent<unknown>, value: number) => {

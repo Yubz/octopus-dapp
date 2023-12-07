@@ -12,3 +12,12 @@
 		color: #171a1c !important;
 	}
 }
+
+.MuiButton-root {
+	&.Mui-disabled {
+		cursor: not-allowed !important;
+		color: #171a1c !important;
+		pointer-events: unset !important;
+		opacity: 0.4 !important;
+	}
+}

@@ -15,6 +15,7 @@ export function Monitor() {
 		if (address && address.length > 0) {
 			fetch();
 		}
+		// eslint-disable-next-line
 	}, [address]);
 
 	async function fetch() {

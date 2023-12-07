@@ -18,19 +18,21 @@ const theme = extendTheme({
 			styleOverrides: {
 				root: ({ ownerState, theme }) => ({
 					...(ownerState.color === 'primary' && {
-						backgroundColor: '#76afcc',
+						background: 'linear-gradient(93deg, rgba(56, 145, 166, 1), rgba(146, 88, 166, 1)) border-box',
 						color: '#171A1C',
 						'&:hover': {
-							backgroundColor: '#76afcc',
+							background: 'linear-gradient(93deg, rgba(56, 145, 166, 1), rgba(146, 88, 166, 1)) border-box',
 							color: '#171A1C',
 						},
 					}),
 					...(ownerState.color === 'neutral' && {
-						backgroundColor: '#171A1C',
-						color: '#76afcc',
+						background: 'linear-gradient(93deg, rgba(56, 145, 166, 1), rgba(146, 88, 166, 1))',
+						WebkitBackgroundClip: 'text',
+						WebkitTextFillColor: 'transparent',
 						'&:hover': {
-							backgroundColor: '#171A1C',
-							color: '#76afcc',
+							background: 'linear-gradient(93deg, rgba(56, 145, 166, 1), rgba(146, 88, 166, 1))',
+							WebkitBackgroundClip: 'text',
+							WebkitTextFillColor: 'transparent',
 						},
 					}),
 				}),

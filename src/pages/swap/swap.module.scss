@@ -1,8 +1,7 @@
 .quote-card,
 .routes-card {
-	width: 50%;
-	border: 1px solid rgba(255, 255, 255, 0.2);
-	background-color: rgba(0, 0, 0, 0.4) !important;
+	width: 45%;
+	background-color: rgba(0, 0, 0, 0) !important;
 }
 
 .sell-token-bloc,
@@ -53,8 +52,11 @@
 .routes-card {
 	.aggregator-route {
 		background-color: rgba(0, 0, 0, 0.4) !important;
+		&:not(.selected) {
+			border: 1px solid rgba(255, 255, 255, 0.2);
+		}
 		&.selected {
-			background: linear-gradient(93deg, #181e2d, #181e2d) padding-box, linear-gradient(93deg, rgba(56, 145, 166, 0.7), rgba(146, 88, 166, 0.7)) border-box;
+			background: linear-gradient(93deg, #181e2d, #181e2d) padding-box, linear-gradient(93deg, rgba(56, 145, 166, 1), rgba(146, 88, 166, 1)) border-box;
 		}
 	}
 }

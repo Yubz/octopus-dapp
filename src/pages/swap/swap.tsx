@@ -1,74 +1,75 @@
-import { useEffect, useState } from 'react';
-import {
-	Button,
-	Card,
-	CardActions,
-	CardContent,
-	CardOverflow,
-	Input,
-	List,
-	ListItemButton,
-	ListItemDecorator,
-	Modal,
-	ModalClose,
-	Option,
-	Select,
-	Sheet,
-	Typography,
-} from '@mui/joy';
-import { fetchQuotes } from '@avnu/avnu-sdk';
-import { BigNumber } from '@ethersproject/bignumber';
-import { Router as FibrousRouter, RouteSuccess } from 'fibrous-router-sdk';
-import { parseUnits, formatUnits } from 'ethers';
+import { useCallback, useEffect, useState } from 'react';
+import { Button, Card, CardActions, CardContent, CardOverflow, Input, List, ListItemButton, Typography } from '@mui/joy';
 import { KeyboardArrowDown, ImportExport, LocalGasStation } from '@mui/icons-material';
-
-interface Token {
-	decimals: number;
-	l2_token_address: string;
-	name: string;
-	sort_order: number;
-	symbol: string;
-	hidden: boolean;
-}
-
-interface SwapRoute {
-	outputAmount: number;
-	outputAmountUsd: number;
-	outputAmountWithGasUsd: number;
-	gasFeesUsd: number;
-	aggregator: 'Avnu' | 'Fibrous';
-}
+import ConnectWallet from '../../ui/connect-wallet/connect-wallet';
+import { useAccount, useBalance } from '@starknet-react/core';
+import TokensModal, { Token } from '../../ui/tokens-modal/tokens-modal';
+import { useDebounce } from 'use-debounce';
+import { SwapRoute, fetchAvnu, fetchFibrous, swapOnAvnu, swapOnFibrous } from '../../services/aggregator.service';
 
 export function Swap() {
+	const { address, account } = useAccount();
+
 	const [sellToken, setSellToken] = useState<Token>();
 	const [sellTokenAmount, setSellTokenAmount] = useState<number>(0);
+	const [debouncedSellTokenAmount] = useDebounce(sellTokenAmount, 500);
 	const [sellTokenAmountUsd, setSellTokenAmountUsd] = useState<number>();
-	const [sellTokenWalletAmount, setSellTokenWalletAmount] = useState<number>();
+	const sellTokenWalletAmount = useBalance({
+		address,
+		token: sellToken?.l2_token_address,
+		watch: true,
+	}).data;
 
 	const [buyToken, setBuyToken] = useState<Token>();
 	const [buyTokenAmount, setBuyTokenAmount] = useState<number>(0);
 	const [buyTokenAmountUsdAfterGas, setBuyTokenAmountUsdAfterGas] = useState<number>();
-	const [buyTokenWalletAmount, setBuyTokenWalletAmount] = useState<number>();
+	const buyTokenWalletAmount = useBalance({
+		address,
+		token: buyToken?.l2_token_address,
+		watch: true,
+	}).data;
 
-	const [tokens, setTokens] = useState<Array<Token>>([]);
 	const [openTokenModal, setOpenTokenModal] = useState<'buy' | 'sell'>();
+	const [connectWalletOpened, setConnectWalletOpened] = useState<boolean>(false);
 
 	const [swapRoutes, setSwapRoutes] = useState<Array<SwapRoute>>([]);
 	const [aggregator, setAggregator] = useState<'Fibrous' | 'Avnu'>();
+	const [swapLoading, setSwapLoading] = useState<boolean>(false);
 
 	useEffect(() => {
-		const timeOutId = setTimeout(() => fetchAggrQuotes(), 500);
-		return () => clearTimeout(timeOutId);
-	}, [sellTokenAmount, sellToken, buyToken]);
+		fetchAggrQuotes();
+		// eslint-disable-next-line
+	}, [address, debouncedSellTokenAmount, sellToken, buyToken]);
 
 	useEffect(() => {
-		fetchTokens();
+		if (address) {
+			setConnectWalletOpened(false);
+		}
+	}, [address]);
+
+	const closeConnectWalletModal = useCallback(() => {
+		setConnectWalletOpened(false);
 	}, []);
 
-	async function fetchTokens() {
-		const tokens: Array<Token> = await fetch('https://mainnet-api.ekubo.org/tokens').then((res) => res.json());
-		setTokens(tokens.filter((token) => !token.hidden).sort((token) => token.sort_order));
-	}
+	const closeTokensModal = useCallback(
+		(token?: Token) => {
+			if (token) {
+				if (openTokenModal === 'buy') {
+					setBuyToken(token);
+					if (token === sellToken) {
+						setSellToken(undefined);
+					}
+				} else {
+					setSellToken(token);
+					if (token === buyToken) {
+						setBuyToken(undefined);
+					}
+				}
+			}
+			setOpenTokenModal(undefined);
+		},
+		[openTokenModal, buyToken, sellToken],
+	);
 
 	async function fetchAggrQuotes() {
 		if (sellTokenAmount === 0) {
@@ -76,58 +77,20 @@ export function Swap() {
 			setBuyTokenAmountUsdAfterGas(0);
 			setSellTokenAmountUsd(undefined);
 			setSwapRoutes([]);
-		} else if (sellToken && sellTokenAmount && buyToken) {
-			const params = {
-				sellTokenAddress: sellToken.l2_token_address,
-				buyTokenAddress: buyToken.l2_token_address,
-				sellAmount: BigNumber.from(parseUnits(sellTokenAmount.toString(), sellToken.decimals)).toBigInt(),
-				//takerAddress: '',
-			};
-			const avnuQuotes = await fetchQuotes(params);
-			//setBuyTokenAmount(Number(formatUnits(quotes[0].buyAmount, buyToken.decimals)));
-			//setSellTokenAmountUsd(quotes[0].sellAmountInUsd);
-
-			//await executeSwap(account, quotes[0]);
-
-			const inputAmount = BigNumber.from(parseUnits(sellTokenAmount.toString(), sellToken.decimals)); // for 1 Ether
-			const router = new FibrousRouter();
-			const fibrousRoute = (await router.getBestRoute(
-				inputAmount, // amount
-				sellToken.l2_token_address, // token input
-				buyToken.l2_token_address, // token output
-			)) as RouteSuccess;
-
+		} else if (sellToken && sellTokenAmount && buyToken && address) {
 			const swapRoutes = [];
-			swapRoutes.push({
-				aggregator: 'Avnu',
-				outputAmount: Number(formatUnits(avnuQuotes[0].buyAmount, buyToken.decimals)),
-				outputAmountUsd: avnuQuotes[0].buyAmountInUsd,
-				outputAmountWithGasUsd: avnuQuotes[0].buyAmountInUsd - avnuQuotes[0].gasFeesInUsd,
-				gasFeesUsd: avnuQuotes[0].gasFeesInUsd,
-			} as SwapRoute);
-			const outputAmount = Number(formatUnits(fibrousRoute.outputAmount, buyToken.decimals));
-			const outputAmountUsd = outputAmount * fibrousRoute.outputToken.price;
-			const gasFeesUsd = fibrousRoute.estimatedGasUsed ? Number(formatUnits(fibrousRoute.estimatedGasUsed, buyToken.decimals)) : 0;
-			swapRoutes.push({
-				aggregator: 'Fibrous',
-				outputAmount: outputAmount,
-				outputAmountUsd: outputAmountUsd,
-				outputAmountWithGasUsd: outputAmountUsd - gasFeesUsd,
-				gasFeesUsd: gasFeesUsd,
-			} as SwapRoute);
-			swapRoutes.sort((a, b) => b.outputAmount - a.outputAmount);
+
+			const avnuQuote = await fetchAvnu(sellToken, buyToken, sellTokenAmount, address);
+			const fibrousQuote = await fetchFibrous(sellToken, buyToken, sellTokenAmount);
+
+			swapRoutes.push(avnuQuote);
+			swapRoutes.push(fibrousQuote);
+
+			swapRoutes.sort((a, b) => (a.gasFeesUsd === 0 ? 1 : b.outputAmountWithGasUsd - a.outputAmountWithGasUsd));
+
 			setSwapRoutes(swapRoutes);
 			selectSwapRoute(swapRoutes[0]);
 		}
-	}
-
-	function selectToken(token: Token) {
-		if (openTokenModal === 'buy') {
-			setBuyToken(token);
-		} else {
-			setSellToken(token);
-		}
-		setOpenTokenModal(undefined);
 	}
 
 	function selectSwapRoute(swapRoute: SwapRoute) {
@@ -138,6 +101,29 @@ export function Swap() {
 
 	function pourcentageDifference(value: number, compareWith: number) {
 		return (100 * Math.abs(value - compareWith)) / ((value + compareWith) / 2);
+	}
+
+	function switchToken() {
+		const tokenBuy = buyToken;
+		const tokenSell = sellToken;
+		setBuyToken(tokenSell);
+		setSellToken(tokenBuy);
+	}
+
+	async function doSwap() {
+		if (account && aggregator && sellToken && buyToken && address) {
+			setSwapLoading(true);
+			try {
+				if (aggregator === 'Avnu') {
+					await swapOnAvnu(sellToken, buyToken, sellTokenAmount, address, account);
+				} else {
+					await swapOnFibrous(sellToken, buyToken, sellTokenAmount, address, account);
+				}
+			} catch (error) {
+				console.log(error);
+			}
+			setSwapLoading(false);
+		}
 	}
 
 	return (
@@ -158,11 +144,16 @@ export function Swap() {
 							/>
 							<Button
 								variant="soft"
-								color="primary"
 								sx={{
 									minWidth: '160px',
 									padding: '12px',
 									marginLeft: 'auto',
+									background: 'rgba(0, 0, 0, 0.4)',
+									color: 'rgba(255, 255, 255, 1)',
+									'&:hover': {
+										background: 'rgba(0, 0, 0, 0.4)',
+										color: 'rgba(255, 255, 255, 1)',
+									},
 								}}
 								onClick={() => setOpenTokenModal('sell')}
 							>
@@ -200,11 +191,16 @@ export function Swap() {
 								)}
 							</Typography>
 							<Typography fontWeight="sm" fontSize="sm" lineHeight="28px" sx={{ marginLeft: 'auto' }} minHeight="28px">
-								{sellTokenWalletAmount && <>Balance: {sellTokenWalletAmount}</>}
+								{sellToken && sellTokenWalletAmount && (
+									<>Balance: {Number(Number(sellTokenWalletAmount?.formatted).toFixed(4)) === 0 ? '0' : Number(sellTokenWalletAmount?.formatted).toFixed(4)}</>
+								)}
 							</Typography>
 						</div>
 					</div>
-					<Button style={{ position: 'absolute', display: 'inline-flex', margin: 'auto', inset: '0px', width: '2.25rem', height: '2.25rem' }}>
+					<Button
+						style={{ position: 'absolute', display: 'inline-flex', margin: 'auto', inset: '0px', width: '2.25rem', height: '2.25rem' }}
+						onClick={() => switchToken()}
+					>
 						<ImportExport></ImportExport>
 					</Button>
 					<div className="buy-token-bloc">
@@ -215,11 +211,16 @@ export function Swap() {
 							<Input placeholder="0" type="number" variant="soft" disabled value={buyTokenAmount} sx={{ lineHeight: '55px', boxShadow: 'none', fontSize: '36px' }} />
 							<Button
 								variant="soft"
-								color="primary"
 								sx={{
 									minWidth: '160px',
 									padding: '12px',
 									marginLeft: 'auto',
+									background: 'rgba(0, 0, 0, 0.4)',
+									color: 'rgba(255, 255, 255, 1)',
+									'&:hover': {
+										background: 'rgba(0, 0, 0, 0.4)',
+										color: 'rgba(255, 255, 255, 1)',
+									},
 								}}
 								onClick={() => setOpenTokenModal('buy')}
 							>
@@ -257,70 +258,49 @@ export function Swap() {
 								)}
 							</Typography>
 							<Typography fontWeight="sm" fontSize="sm" lineHeight="28px" sx={{ marginLeft: 'auto' }} minHeight="28px">
-								{buyTokenWalletAmount && <>Balance: {buyTokenWalletAmount}</>}
+								{buyToken && buyTokenWalletAmount && (
+									<>Balance: {Number(Number(buyTokenWalletAmount?.formatted).toFixed(4)) === 0 ? '0' : Number(buyTokenWalletAmount?.formatted).toFixed(4)}</>
+								)}
 							</Typography>
 						</div>
 					</div>
 				</CardContent>
 				<CardOverflow>
-					<CardActions buttonFlex="1">
-						<Button sx={{ minHeight: '40px' }}>Connect Wallet</Button>
+					<CardActions buttonFlex="1" sx={{ padding: 0 }}>
+						{!address && (
+							<Button sx={{ minHeight: '40px' }} onClick={() => setConnectWalletOpened(true)}>
+								Connect Wallet
+							</Button>
+						)}
+						{address &&
+							aggregator &&
+							swapRoutes.length > 0 &&
+							(Number(sellTokenWalletAmount?.formatted) > sellTokenAmount ? (
+								<Button sx={{ minHeight: '40px' }} onClick={() => doSwap()} loading={swapLoading}>
+									{!swapLoading && `via ${aggregator}`}
+								</Button>
+							) : (
+								<Button sx={{ minHeight: '40px' }} disabled>
+									Insufficiant Balance
+								</Button>
+							))}
+						{address && (!aggregator || swapRoutes.length === 0) && (
+							<Button sx={{ minHeight: '40px' }} disabled>
+								Select aggregator
+							</Button>
+						)}
 					</CardActions>
 				</CardOverflow>
 			</Card>
-			<Modal
-				className="token-modal"
-				open={openTokenModal === 'buy' || openTokenModal === 'sell'}
-				onClose={() => setOpenTokenModal(undefined)}
-				sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-			>
-				<Sheet
-					variant="soft"
-					sx={{
-						width: '500px',
-						height: '40vh',
-						borderRadius: 'md',
-						p: 3,
-						boxShadow: 'lg',
-					}}
-				>
-					<ModalClose variant="soft" sx={{ m: 1 }} />
-					<Typography fontWeight="lg" fontSize="lg" id="modal-title">
-						Select a token
-					</Typography>
-					<List sx={{ maxHeight: 'calc(100% - 2rem)', overflowY: 'scroll', '--ListDivider-gap': 0 }}>
-						{tokens.map((token) => (
-							<ListItemButton variant="soft" sx={{ borderRadius: '8px', marginRight: '10px' }} onClick={() => selectToken(token)}>
-								<ListItemDecorator>
-									<img height="35" width="35" src={'https://mainnet-api.ekubo.org/tokens/' + token.l2_token_address + '/logo.svg'} />
-									<div className="token-info">
-										<Typography fontWeight="lg" fontSize="lg">
-											{token.symbol}
-										</Typography>
-										<Typography fontWeight="sm" fontSize="sm" fontStyle="italic">
-											{token.name}
-										</Typography>
-									</div>
-								</ListItemDecorator>
-								<Typography fontWeight="sm" fontSize="sm" lineHeight="28px" sx={{ marginLeft: 'auto' }} minHeight="28px">
-									10
-								</Typography>
-							</ListItemButton>
-						))}
-					</List>
-				</Sheet>
-			</Modal>
 			<Card className="routes-card" variant="soft">
 				<CardContent orientation="vertical" sx={{ gap: '10px' }}>
-					<Typography fontWeight="lg" fontSize="lg" lineHeight="28px" sx={{ marginBottom: '10px' }}>
-						Select a route to perform a swap
-					</Typography>
-					<List sx={{ gap: '10px' }}>
+					<List sx={{ gap: '10px', '--ListDivider-gap': 0 }}>
 						{swapRoutes.map((swapRoute, index) => (
 							<ListItemButton
 								className={aggregator === swapRoute.aggregator ? 'aggregator-route selected' : 'aggregator-route'}
-								sx={{ borderRadius: '8px', marginRight: '10px' }}
+								sx={{ borderRadius: '8px', minHeight: '58px' }}
 								onClick={() => selectSwapRoute(swapRoute)}
+								key={swapRoute.aggregator}
 							>
 								{swapRoute.aggregator === 'Avnu' ? (
 									<img alt="logo" src="/images/aggregator/avnu.svg" width="80"></img>
@@ -331,23 +311,32 @@ export function Swap() {
 									<Typography fontWeight="lg" fontSize="lg">
 										{swapRoute.outputAmount.toFixed(4)} {buyToken?.symbol}
 									</Typography>
-									<Typography fontWeight="sm" fontSize="sm" fontStyle="italic">
-										≈{' '}
-										{new Intl.NumberFormat('en-US', {
-											style: 'currency',
-											currency: 'USD',
-										}).format(swapRoute.outputAmountWithGasUsd)}
-									</Typography>
-								</div>
-								<div className="extra-infos">
-									{index === 0 ? (
-										<Typography fontWeight="lg" fontSize="sm" color="success">
-											BEST
+									{swapRoute.gasFeesUsd > 0 ? (
+										<Typography fontWeight="sm" fontSize="sm" fontStyle="italic">
+											≈{' '}
+											{new Intl.NumberFormat('en-US', {
+												style: 'currency',
+												currency: 'USD',
+											}).format(swapRoute.outputAmountWithGasUsd)}{' '}
+											after fees
 										</Typography>
 									) : (
-										<Typography fontWeight="lg" fontSize="sm" color="danger">
-											-{pourcentageDifference(swapRoute.outputAmountWithGasUsd, swapRoutes[0].outputAmountWithGasUsd).toFixed(2)}%
-										</Typography>
+										''
+									)}
+								</div>
+								<div className="extra-infos">
+									{swapRoute.gasFeesUsd ? (
+										index === 0 ? (
+											<Typography fontWeight="lg" fontSize="sm" color="success">
+												BEST
+											</Typography>
+										) : (
+											<Typography fontWeight="lg" fontSize="sm" color="danger">
+												-{pourcentageDifference(swapRoute.outputAmountWithGasUsd, swapRoutes[0].outputAmountWithGasUsd).toFixed(2)}%
+											</Typography>
+										)
+									) : (
+										<Typography fontWeight="lg" fontSize="sm" color="danger"></Typography>
 									)}
 									<Typography fontWeight="sm" fontSize="sm" fontStyle="italic">
 										<LocalGasStation sx={{ width: '20px', height: '20px', marginRight: '2px', verticalAlign: 'sub' }}></LocalGasStation>
@@ -364,6 +353,12 @@ export function Swap() {
 					</List>
 				</CardContent>
 			</Card>
+			<ConnectWallet opened={connectWalletOpened} onClose={closeConnectWalletModal}></ConnectWallet>
+			<TokensModal
+				opened={openTokenModal === 'buy' || openTokenModal === 'sell'}
+				selectedToken={openTokenModal === 'buy' ? buyToken : sellToken}
+				onClose={closeTokensModal}
+			></TokensModal>
 		</div>
 	);
 }
