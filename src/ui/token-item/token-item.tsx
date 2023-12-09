@@ -1,6 +1,6 @@
 import { ListItemButton, ListItemDecorator, Typography } from '@mui/joy';
-import { Token } from '../tokens-modal/tokens-modal';
 import { useAccount, useBalance } from '@starknet-react/core';
+import { Token } from '../../services/token.service';
 
 export interface TokenItemProps {
 	token: Token;

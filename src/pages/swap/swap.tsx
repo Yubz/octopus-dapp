@@ -3,9 +3,10 @@ import { Button, Card, CardActions, CardContent, CardOverflow, Input, List, List
 import { KeyboardArrowDown, ImportExport, LocalGasStation } from '@mui/icons-material';
 import ConnectWallet from '../../ui/connect-wallet/connect-wallet';
 import { useAccount, useBalance } from '@starknet-react/core';
-import TokensModal, { Token } from '../../ui/tokens-modal/tokens-modal';
+import TokensModal from '../../ui/tokens-modal/tokens-modal';
 import { useDebounce } from 'use-debounce';
-import { SwapRoute, fetchAvnu, fetchFibrous, swapOnAvnu, swapOnFibrous } from '../../services/aggregator.service';
+import { SwapRoute, fetchAvnu, fetchFibrous, fetchOpenOcean, swapOnAvnu, swapOnFibrous } from '../../services/aggregator.service';
+import { Token, getTokenPrice } from '../../services/token.service';
 
 export function Swap() {
 	const { address, account } = useAccount();
@@ -33,11 +34,12 @@ export function Swap() {
 	const [connectWalletOpened, setConnectWalletOpened] = useState<boolean>(false);
 
 	const [swapRoutes, setSwapRoutes] = useState<Array<SwapRoute>>([]);
-	const [aggregator, setAggregator] = useState<'Fibrous' | 'Avnu'>();
+	const [aggregator, setAggregator] = useState<'Fibrous' | 'Avnu' | 'OpenOcean'>();
 	const [swapLoading, setSwapLoading] = useState<boolean>(false);
 
 	useEffect(() => {
 		fetchAggrQuotes();
+		fetchPrice();
 		// eslint-disable-next-line
 	}, [address, debouncedSellTokenAmount, sellToken, buyToken]);
 
@@ -72,31 +74,46 @@ export function Swap() {
 	);
 
 	async function fetchAggrQuotes() {
-		if (sellTokenAmount === 0) {
-			setBuyTokenAmount(0);
-			setBuyTokenAmountUsdAfterGas(0);
-			setSellTokenAmountUsd(undefined);
-			setSwapRoutes([]);
-		} else if (sellToken && sellTokenAmount && buyToken && address) {
-			const swapRoutes = [];
-
-			const avnuQuote = await fetchAvnu(sellToken, buyToken, sellTokenAmount, address);
-			const fibrousQuote = await fetchFibrous(sellToken, buyToken, sellTokenAmount);
-
-			swapRoutes.push(avnuQuote);
-			swapRoutes.push(fibrousQuote);
-
-			swapRoutes.sort((a, b) => (a.gasFeesUsd === 0 ? 1 : b.outputAmountWithGasUsd - a.outputAmountWithGasUsd));
-
-			setSwapRoutes(swapRoutes);
-			selectSwapRoute(swapRoutes[0]);
+		setBuyTokenAmount(0);
+		setBuyTokenAmountUsdAfterGas(0);
+		setSwapRoutes([]);
+		if (sellToken && sellTokenAmount > 0 && buyToken) {
+			// Create a promise that rejects in 5000 milliseconds
+			let timeout = new Promise<SwapRoute | undefined>((resolve, reject) => {
+				let id = setTimeout(() => {
+					clearTimeout(id);
+					resolve(undefined);
+				}, 2000);
+			});
+			Promise.all([
+				fetchAvnu(sellToken, buyToken, sellTokenAmount),
+				fetchFibrous(sellToken, buyToken, sellTokenAmount),
+				Promise.race([fetchOpenOcean(sellToken, buyToken, sellTokenAmount), timeout]),
+			]).then((swapRoutes) => {
+				const routes = swapRoutes.filter((swapRoute) => swapRoute != null) as Array<SwapRoute>;
+				routes.sort((a: SwapRoute, b: SwapRoute) => (a.gasFeesUsd === 0 ? 1 : b.outputAmountWithGasUsd - a.outputAmountWithGasUsd));
+				setSwapRoutes(routes);
+				selectSwapRoute(routes[0]);
+			});
 		}
 	}
 
-	function selectSwapRoute(swapRoute: SwapRoute) {
-		setBuyTokenAmount(swapRoute.outputAmount);
-		setBuyTokenAmountUsdAfterGas(swapRoute.outputAmountUsd);
-		setAggregator(swapRoute.aggregator);
+	async function fetchPrice() {
+		if (sellTokenAmount === 0) {
+			setSellTokenAmountUsd(undefined);
+		} else if (sellToken) {
+			const price = await getTokenPrice(sellToken);
+			setSellTokenAmountUsd(sellTokenAmount * price);
+		}
+	}
+
+	async function selectSwapRoute(swapRoute: SwapRoute) {
+		if (buyToken) {
+			const price = await getTokenPrice(buyToken);
+			setBuyTokenAmount(swapRoute.outputAmount);
+			setBuyTokenAmountUsdAfterGas(swapRoute.outputAmount * price);
+			setAggregator(swapRoute.aggregator);
+		}
 	}
 
 	function pourcentageDifference(value: number, compareWith: number) {
@@ -115,9 +132,9 @@ export function Swap() {
 			setSwapLoading(true);
 			try {
 				if (aggregator === 'Avnu') {
-					await swapOnAvnu(sellToken, buyToken, sellTokenAmount, address, account);
+					await swapOnAvnu(sellToken, buyToken, sellTokenAmount, account);
 				} else {
-					await swapOnFibrous(sellToken, buyToken, sellTokenAmount, address, account);
+					await swapOnFibrous(sellToken, buyToken, sellTokenAmount, account);
 				}
 			} catch (error) {
 				console.log(error);
@@ -180,7 +197,7 @@ export function Swap() {
 							<Typography fontWeight="sm" fontSize="sm" lineHeight="28px" minHeight="28px">
 								{sellTokenAmountUsd ? (
 									<>
-										≈
+										≈{' '}
 										{new Intl.NumberFormat('en-US', {
 											style: 'currency',
 											currency: 'USD',
@@ -302,11 +319,7 @@ export function Swap() {
 								onClick={() => selectSwapRoute(swapRoute)}
 								key={swapRoute.aggregator}
 							>
-								{swapRoute.aggregator === 'Avnu' ? (
-									<img alt="logo" src="/images/aggregator/avnu.svg" width="80"></img>
-								) : (
-									<img alt="logo" src="/images/aggregator/fibrous.svg" width="80"></img>
-								)}
+								<img alt="logo" src={`/images/aggregator/${swapRoute.aggregator.toLocaleLowerCase()}.svg`} width="80"></img>
 								<div className="output-amount">
 									<Typography fontWeight="lg" fontSize="lg">
 										{swapRoute.outputAmount.toFixed(4)} {buyToken?.symbol}
@@ -321,7 +334,14 @@ export function Swap() {
 											after fees
 										</Typography>
 									) : (
-										''
+										<Typography fontWeight="sm" fontSize="sm" fontStyle="italic" color="danger">
+											≈{' '}
+											{new Intl.NumberFormat('en-US', {
+												style: 'currency',
+												currency: 'USD',
+											}).format(swapRoute.outputAmountWithGasUsd)}{' '}
+											before fees
+										</Typography>
 									)}
 								</div>
 								<div className="extra-infos">

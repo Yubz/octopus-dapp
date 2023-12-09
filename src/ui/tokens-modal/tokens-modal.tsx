@@ -1,16 +1,7 @@
 import { List, Modal, ModalClose, Sheet, Typography } from '@mui/joy';
 import { useEffect, useState } from 'react';
 import TokenItem from '../token-item/token-item';
-
-export interface Token {
-	decimals: number;
-	l2_token_address: string;
-	name: string;
-	sort_order: number;
-	symbol: string;
-	hidden: boolean;
-	balance: number;
-}
+import { TOKENS, Token } from '../../services/token.service';
 
 export interface TokensModalProps {
 	opened: boolean;
@@ -31,8 +22,7 @@ export function TokensModal(tokensModalProps: TokensModalProps) {
 	}, [tokensModalProps]);
 
 	async function fetchTokens() {
-		let tokens: Array<Token> = await fetch('https://mainnet-api.ekubo.org/tokens').then((res) => res.json());
-		setTokens(tokens.filter((token) => !token.hidden).sort((tokenA, tokenB) => tokenA.sort_order - tokenB.sort_order));
+		setTokens(TOKENS.sort((tokenA, tokenB) => tokenA.sort_order - tokenB.sort_order));
 	}
 
 	return (
