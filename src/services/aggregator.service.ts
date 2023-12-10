@@ -22,11 +22,12 @@ export const fetchAvnu = async (sellToken: Token, buyToken: Token, sellTokenAmou
 	};
 	const avnuQuotes = await fetchQuotes(params);
 	const outputAmount = Number(formatUnits(avnuQuotes[0].buyAmount, buyToken.decimals));
+	const outputAmountUsd = outputAmount * buyToken.price!;
 	return {
 		aggregator: 'Avnu',
-		outputAmount: Number(formatUnits(avnuQuotes[0].buyAmount, buyToken.decimals)),
-		outputAmountUsd: outputAmount * buyToken.price!,
-		outputAmountWithGasUsd: avnuQuotes[0].buyAmountInUsd - avnuQuotes[0].gasFeesInUsd,
+		outputAmount: outputAmount,
+		outputAmountUsd: outputAmountUsd,
+		outputAmountWithGasUsd: outputAmountUsd - avnuQuotes[0].gasFeesInUsd,
 		gasFeesUsd: avnuQuotes[0].gasFeesInUsd,
 	};
 };
