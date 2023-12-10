@@ -5,7 +5,9 @@
 }
 
 .sell-token-bloc,
-.buy-token-bloc {
+.buy-token-bloc, 
+.slippage-bloc,
+.actions-bloc {
 	border-radius: 8px;
 	padding: 16px;
 	border: 1px solid rgba(255, 255, 255, 0.2);
@@ -17,6 +19,18 @@
 
 		.MuiInput-root {
 			background-color: rgba(0, 0, 0, 0) !important;
+		}
+	}
+
+	.MuiRadio-root {
+		&.Mui-checked {
+			color: #171A1C;
+		}
+		.MuiRadio-action {
+			background-color: rgba(0, 0, 0, 0.4) !important;
+			&.Mui-checked {
+				background: linear-gradient(93deg, rgba(56, 145, 166, 1), rgba(146, 88, 166, 1)) border-box;
+			}
 		}
 	}
 

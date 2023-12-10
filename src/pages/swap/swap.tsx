@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Button, Card, CardActions, CardContent, CardOverflow, Input, List, ListItemButton, Typography } from '@mui/joy';
+import { Button, Card, CardContent, CardOverflow, Input, List, ListItemButton, Radio, RadioGroup, Sheet, Typography } from '@mui/joy';
 import { KeyboardArrowDown, ImportExport, LocalGasStation } from '@mui/icons-material';
 import ConnectWallet from '../../ui/connect-wallet/connect-wallet';
 import { useAccount, useBalance } from '@starknet-react/core';
@@ -35,7 +35,9 @@ export function Swap() {
 
 	const [swapRoutes, setSwapRoutes] = useState<Array<SwapRoute>>([]);
 	const [aggregator, setAggregator] = useState<'Fibrous' | 'Avnu' | 'OpenOcean'>();
+	const [slippage, setSlippage] = useState<number>(0.1);
 	const [swapLoading, setSwapLoading] = useState<boolean>(false);
+	const [quoteLoading, setQuoteLoading] = useState<boolean>(false);
 
 	useEffect(() => {
 		fetchAggrQuotes();
@@ -83,17 +85,22 @@ export function Swap() {
 				let id = setTimeout(() => {
 					clearTimeout(id);
 					resolve(undefined);
-				}, 2000);
+				}, 5000);
 			});
+			setQuoteLoading(true);
+			buyToken.price = await getTokenPrice(buyToken);
 			Promise.all([
-				fetchAvnu(sellToken, buyToken, sellTokenAmount),
-				fetchFibrous(sellToken, buyToken, sellTokenAmount),
+				fetchAvnu(sellToken, buyToken, sellTokenAmount).catch(() => null),
+				fetchFibrous(sellToken, buyToken, sellTokenAmount).catch(() => null),
 				Promise.race([fetchOpenOcean(sellToken, buyToken, sellTokenAmount), timeout]),
 			]).then((swapRoutes) => {
 				const routes = swapRoutes.filter((swapRoute) => swapRoute != null) as Array<SwapRoute>;
 				routes.sort((a: SwapRoute, b: SwapRoute) => (a.gasFeesUsd === 0 ? 1 : b.outputAmountWithGasUsd - a.outputAmountWithGasUsd));
 				setSwapRoutes(routes);
-				selectSwapRoute(routes[0]);
+				if (routes.length > 0) {
+					selectSwapRoute(routes[0]);
+				}
+				setQuoteLoading(false);
 			});
 		}
 	}
@@ -132,9 +139,11 @@ export function Swap() {
 			setSwapLoading(true);
 			try {
 				if (aggregator === 'Avnu') {
-					await swapOnAvnu(sellToken, buyToken, sellTokenAmount, account);
+					await swapOnAvnu(sellToken, buyToken, sellTokenAmount, account, slippage);
+				} else if (aggregator === 'Fibrous') {
+					await swapOnFibrous(sellToken, buyToken, sellTokenAmount, account, slippage);
 				} else {
-					await swapOnFibrous(sellToken, buyToken, sellTokenAmount, account);
+					//await swapOnOpeanOcean(sellToken, buyToken, sellTokenAmount, account, slippage);
 				}
 			} catch (error) {
 				console.log(error);
@@ -282,10 +291,41 @@ export function Swap() {
 						</div>
 					</div>
 				</CardContent>
-				<CardOverflow>
-					<CardActions buttonFlex="1" sx={{ padding: 0 }}>
+				<CardOverflow sx={{gap: '10px'}}>
+					<div className="slippage-bloc">
+						<Typography fontWeight="sm" fontSize="sm" lineHeight="28px" sx={{ marginBottom: '10px' }}>
+							Max slippage
+						</Typography>
+						<RadioGroup
+							aria-labelledby="slippage-attribute"
+							defaultValue={0.1}
+							sx={{ gap: 2, mb: 2, flexWrap: 'wrap', flexDirection: 'row' }}
+							onChange={() => setSlippage}
+						>
+							{[0.1, 0.5, 1, 2, 5, 10].map((size) => (
+								<Sheet
+									key={size}
+									sx={{
+										position: 'relative',
+										width: 40,
+										height: 40,
+										borderRadius: '8px',
+										display: 'flex',
+										alignItems: 'center',
+										justifyContent: 'center',
+										paddingLeft: '0.5rem',
+										paddingRight: '0.5rem',
+										backgroundColor: 'transparent'
+									}}
+								>
+									<Radio variant='soft' color="primary" overlay disableIcon value={size} label={size+'%'}/>
+								</Sheet>
+							))}
+						</RadioGroup>
+					</div>
+					<div className="actions-bloc">
 						{!address && (
-							<Button sx={{ minHeight: '40px' }} onClick={() => setConnectWalletOpened(true)}>
+							<Button sx={{ minHeight: '40px', width: '100%' }} onClick={() => setConnectWalletOpened(true)}>
 								Connect Wallet
 							</Button>
 						)}
@@ -293,25 +333,119 @@ export function Swap() {
 							aggregator &&
 							swapRoutes.length > 0 &&
 							(Number(sellTokenWalletAmount?.formatted) > sellTokenAmount ? (
-								<Button sx={{ minHeight: '40px' }} onClick={() => doSwap()} loading={swapLoading}>
+								<Button sx={{ minHeight: '40px', width: '100%' }} onClick={() => doSwap()} loading={swapLoading}>
 									{!swapLoading && `via ${aggregator}`}
 								</Button>
 							) : (
-								<Button sx={{ minHeight: '40px' }} disabled>
+								<Button sx={{ minHeight: '40px', width: '100%' }} disabled>
 									Insufficiant Balance
 								</Button>
 							))}
 						{address && (!aggregator || swapRoutes.length === 0) && (
-							<Button sx={{ minHeight: '40px' }} disabled>
+							<Button sx={{ minHeight: '40px', width: '100%' }} disabled>
 								Select aggregator
 							</Button>
 						)}
-					</CardActions>
+					</div>
 				</CardOverflow>
 			</Card>
 			<Card className="routes-card" variant="soft">
 				<CardContent orientation="vertical" sx={{ gap: '10px' }}>
 					<List sx={{ gap: '10px', '--ListDivider-gap': 0 }}>
+						{quoteLoading && 
+							<>
+								<ListItemButton
+									className='aggregator-route'
+									sx={{ borderRadius: '8px', minHeight: '58px', pointerEvents: 'none', filter: 'blur(4px)' }}
+									key="skeleton-1"
+								>
+									<img alt="logo" src={`/images/aggregator/avnu.svg`} width="80"></img>
+									<div className="output-amount">
+										<Typography fontWeight="lg" fontSize="lg">
+											4 {buyToken?.symbol}
+										</Typography>
+										<Typography fontWeight="sm" fontSize="sm" fontStyle="italic">
+											≈{' '}
+											{new Intl.NumberFormat('en-US', {
+												style: 'currency',
+												currency: 'USD',
+											}).format(222)}{' '}
+											after fees
+										</Typography>
+									</div>
+									<div className="extra-infos">
+										<Typography fontWeight="lg" fontSize="sm" color="success"></Typography>
+										<Typography fontWeight="sm" fontSize="sm" fontStyle="italic">
+											<LocalGasStation sx={{ width: '20px', height: '20px', marginRight: '2px', verticalAlign: 'sub' }}></LocalGasStation>
+											{new Intl.NumberFormat('en-US', {
+														style: 'currency',
+														currency: 'USD',
+												}).format(2.3)}
+										</Typography>
+									</div>
+								</ListItemButton>
+								<ListItemButton
+									className='aggregator-route'
+									sx={{ borderRadius: '8px', minHeight: '58px', pointerEvents: 'none', filter: 'blur(4px)' }}
+									key="skeleton-2"
+								>
+									<img alt="logo" src={`/images/aggregator/fibrous.svg`} width="80"></img>
+									<div className="output-amount">
+										<Typography fontWeight="lg" fontSize="lg">
+											4 {buyToken?.symbol}
+										</Typography>
+										<Typography fontWeight="sm" fontSize="sm" fontStyle="italic">
+											≈{' '}
+											{new Intl.NumberFormat('en-US', {
+												style: 'currency',
+												currency: 'USD',
+											}).format(222)}{' '}
+											after fees
+										</Typography>
+									</div>
+									<div className="extra-infos">
+										<Typography fontWeight="lg" fontSize="sm" color="success"></Typography>
+										<Typography fontWeight="sm" fontSize="sm" fontStyle="italic">
+											<LocalGasStation sx={{ width: '20px', height: '20px', marginRight: '2px', verticalAlign: 'sub' }}></LocalGasStation>
+											{new Intl.NumberFormat('en-US', {
+														style: 'currency',
+														currency: 'USD',
+												}).format(2.3)}
+										</Typography>
+									</div>
+								</ListItemButton>
+								<ListItemButton
+									className='aggregator-route'
+									sx={{ borderRadius: '8px', minHeight: '58px', pointerEvents: 'none', filter: 'blur(4px)' }}
+									key="skeleton-3"
+								>
+									<img alt="logo" src={`/images/aggregator/openocean.svg`} width="80"></img>
+									<div className="output-amount">
+										<Typography fontWeight="lg" fontSize="lg">
+											4 {buyToken?.symbol}
+										</Typography>
+										<Typography fontWeight="sm" fontSize="sm" fontStyle="italic">
+											≈{' '}
+											{new Intl.NumberFormat('en-US', {
+												style: 'currency',
+												currency: 'USD',
+											}).format(222)}{' '}
+											after fees
+										</Typography>
+									</div>
+									<div className="extra-infos">
+										<Typography fontWeight="lg" fontSize="sm" color="success"></Typography>
+										<Typography fontWeight="sm" fontSize="sm" fontStyle="italic">
+											<LocalGasStation sx={{ width: '20px', height: '20px', marginRight: '2px', verticalAlign: 'sub' }}></LocalGasStation>
+											{new Intl.NumberFormat('en-US', {
+														style: 'currency',
+														currency: 'USD',
+												}).format(2.3)}
+										</Typography>
+									</div>
+								</ListItemButton>
+							</>
+						}
 						{swapRoutes.map((swapRoute, index) => (
 							<ListItemButton
 								className={aggregator === swapRoute.aggregator ? 'aggregator-route selected' : 'aggregator-route'}
