@@ -1,4 +1,4 @@
-import { executeSwap, fetchQuotes } from '@avnu/avnu-sdk';
+import { QuoteRequest, executeSwap, fetchQuotes } from '@avnu/avnu-sdk';
 import { BigNumber } from '@ethersproject/bignumber';
 import { parseUnits, formatUnits } from 'ethers';
 import { Router as FibrousRouter, RouteSuccess } from 'fibrous-router-sdk';
@@ -33,11 +33,14 @@ export const fetchAvnu = async (sellToken: Token, buyToken: Token, sellTokenAmou
 };
 
 export const swapOnAvnu = async (sellToken: Token, buyToken: Token, sellTokenAmount: number, account: AccountInterface, slippage: number): Promise<string> => {
-	const params = {
+	const params: QuoteRequest = {
 		sellTokenAddress: sellToken.l2_token_address,
 		buyTokenAddress: buyToken.l2_token_address,
 		sellAmount: BigNumber.from(parseUnits(sellTokenAmount.toString(), sellToken.decimals)).toBigInt(),
 		takerAddress: account.address,
+		integratorFeeRecipient: process.env.REACT_APP_REFERER_ADDRESS,
+		//integratorFees: BigInt(0), // no fees
+		integratorName: 'Octopoid',
 	};
 	const avnuQuotes = await fetchQuotes(params);
 	return (await executeSwap(account, avnuQuotes[0], { slippage: slippage / 100 })).transactionHash;
@@ -66,7 +69,7 @@ export const swapOnFibrous = async (sellToken: Token, buyToken: Token, sellToken
 	const router = new FibrousRouter();
 
 	const approveCall: Call = await router.buildApprove(inputAmount, sellToken.l2_token_address);
-	const swapCall: Call = await router.buildTransaction(inputAmount, sellToken.l2_token_address, buyToken.l2_token_address, slippage/100, account.address);
+	const swapCall: Call = await router.buildTransaction(inputAmount, sellToken.l2_token_address, buyToken.l2_token_address, slippage / 100, account.address);
 
 	return (await account.execute([approveCall, swapCall])).transaction_hash;
 };
@@ -80,7 +83,7 @@ export const fetchOpenOcean = async (sellToken: Token, buyToken: Token, sellToke
 		outTokenSymbol: buyToken.symbol,
 		outTokenAddress: buyToken.l2_token_address,
 		amount: inputAmount.toString(),
-		gasPrice: '5000000000'
+		gasPrice: '5000000000',
 	});
 	const quote = await axios.get(`https://ethapi.openocean.finance/v1/starknet/quote?${queryParams}`);
 	const outputAmount = Number(formatUnits(quote.data.outAmount, buyToken.decimals));
@@ -93,4 +96,23 @@ export const fetchOpenOcean = async (sellToken: Token, buyToken: Token, sellToke
 		outputAmountWithGasUsd: outputAmountUsd,
 		gasFeesUsd: 0,
 	};
+};
+
+export const swapOnOpenOcean = async (sellToken: Token, buyToken: Token, sellTokenAmount: number, account: AccountInterface, slippage: number): Promise<string> => {
+	const inputAmount = BigNumber.from(parseUnits(sellTokenAmount.toString(), sellToken.decimals));
+
+	const queryParams = new URLSearchParams({
+		inTokenSymbol: sellToken.symbol,
+		inTokenAddress: sellToken.l2_token_address,
+		outTokenSymbol: buyToken.symbol,
+		outTokenAddress: buyToken.l2_token_address,
+		amount: inputAmount.toString(),
+		gasPrice: '5000000000',
+		slippage: (slippage * 100).toString(),
+		account: account.address,
+		referrer: process.env.REACT_APP_REFERER_ADDRESS || '',
+	});
+	const quote = await axios.get(`https://ethapi.openocean.finance/v1/starknet/swap-quote?${queryParams}`);
+
+	return (await account.execute(quote.data.transaction)).transaction_hash;
 };
