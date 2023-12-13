@@ -128,7 +128,10 @@ export const TOKENS: Array<Token> = [
 	},
 ];
 
-export const getTokenPrice = async (token: Token): Promise<number> => {
-	const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${token.id}&vs_currencies=usd`);
-	return Number(response.data[token.id].usd);
+export const fetchTokensPrice = async (): Promise<void> => {
+	const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${TOKENS.map((token) => token.id).join(',')}&vs_currencies=usd`);
+	TOKENS.forEach((token) => {
+		token.price = response.data[token.id].usd;
+	});
+	return;
 };

@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Button, Card, CardContent, CardOverflow, Input, List, ListItemButton, Radio, RadioGroup, Sheet, Typography } from '@mui/joy';
-import { KeyboardArrowDown, ImportExport, LocalGasStation } from '@mui/icons-material';
+import { Button, Card, CardContent, CardOverflow, Input, Link, List, ListItemButton, Radio, RadioGroup, Sheet, Snackbar, Typography } from '@mui/joy';
+import { KeyboardArrowDown, ImportExport, LocalGasStation, Verified, Error } from '@mui/icons-material';
 import ConnectWallet from '../../ui/connect-wallet/connect-wallet';
 import { useAccount, useBalance } from '@starknet-react/core';
 import TokensModal from '../../ui/tokens-modal/tokens-modal';
 import { useDebounce } from 'use-debounce';
-import { SwapRoute, fetchAvnu, fetchFibrous, fetchOpenOcean, swapOnAvnu, swapOnFibrous, swapOnOpenOcean } from '../../services/aggregator.service';
-import { Token, getTokenPrice } from '../../services/token.service';
+import { SwapRoute, fetchAvnu, fetchFibrous, swapOnAvnu, swapOnFibrous } from '../../services/aggregator.service';
+import { Token, fetchTokensPrice } from '../../services/token.service';
 
 export function Swap() {
 	const { address, account } = useAccount();
 
 	const [sellToken, setSellToken] = useState<Token>();
-	const [sellTokenAmount, setSellTokenAmount] = useState<number>(0);
+	const [sellTokenAmount, setSellTokenAmount] = useState<number>(1);
 	const [debouncedSellTokenAmount] = useDebounce(sellTokenAmount, 500);
 	const [sellTokenAmountUsd, setSellTokenAmountUsd] = useState<number>();
 	const sellTokenWalletAmount = useBalance({
@@ -23,7 +23,7 @@ export function Swap() {
 
 	const [buyToken, setBuyToken] = useState<Token>();
 	const [buyTokenAmount, setBuyTokenAmount] = useState<number>(0);
-	const [buyTokenAmountUsdAfterGas, setBuyTokenAmountUsdAfterGas] = useState<number>();
+	const [buyTokenAmountUsd, setBuyTokenAmountUsd] = useState<number>();
 	const buyTokenWalletAmount = useBalance({
 		address,
 		token: buyToken?.l2_token_address,
@@ -32,6 +32,7 @@ export function Swap() {
 
 	const [openTokenModal, setOpenTokenModal] = useState<'buy' | 'sell'>();
 	const [connectWalletOpened, setConnectWalletOpened] = useState<boolean>(false);
+	const [snackbar, setSnackbar] = useState<'success' | 'error'>();
 
 	const [swapRoutes, setSwapRoutes] = useState<Array<SwapRoute>>([]);
 	const [aggregator, setAggregator] = useState<'Fibrous' | 'Avnu' | 'OpenOcean'>();
@@ -50,6 +51,16 @@ export function Swap() {
 			setConnectWalletOpened(false);
 		}
 	}, [address]);
+
+	useEffect(() => {
+		fetchTokensPrice();
+		const interval = setInterval(() => {
+			fetchTokensPrice();
+		}, 30000);
+		return () => {
+			clearInterval(interval);
+		};
+	}, []);
 
 	const closeConnectWalletModal = useCallback(() => {
 		setConnectWalletOpened(false);
@@ -77,22 +88,23 @@ export function Swap() {
 
 	async function fetchAggrQuotes() {
 		setBuyTokenAmount(0);
-		setBuyTokenAmountUsdAfterGas(0);
+		setBuyTokenAmountUsd(0);
 		setSwapRoutes([]);
 		if (sellToken && sellTokenAmount > 0 && buyToken) {
-			// Create a promise that rejects in 5000 milliseconds
-			let timeout = new Promise<SwapRoute | undefined>((resolve, reject) => {
-				let id = setTimeout(() => {
-					clearTimeout(id);
-					resolve(undefined);
-				}, 10000);
-			});
+			/*
+				// Create a promise that resolve in 10 seconds
+				let timeout = new Promise<SwapRoute | undefined>((resolve, reject) => {
+					let id = setTimeout(() => {
+						clearTimeout(id);
+						resolve(undefined);
+					}, 10000);
+				});
+			*/
 			setQuoteLoading(true);
-			buyToken.price = await getTokenPrice(buyToken);
 			Promise.all([
 				fetchAvnu(sellToken, buyToken, sellTokenAmount).catch(() => null),
 				fetchFibrous(sellToken, buyToken, sellTokenAmount).catch(() => null),
-				Promise.race([fetchOpenOcean(sellToken, buyToken, sellTokenAmount), timeout]),
+				//Promise.race([fetchOpenOcean(sellToken, buyToken, sellTokenAmount), timeout]),
 			]).then((swapRoutes) => {
 				const routes = swapRoutes.filter((swapRoute) => swapRoute != null && swapRoute.outputAmount > 0) as Array<SwapRoute>;
 				routes.sort((a: SwapRoute, b: SwapRoute) => (a.gasFeesUsd === 0 ? 1 : b.outputAmountWithGasUsd - a.outputAmountWithGasUsd));
@@ -109,16 +121,14 @@ export function Swap() {
 		if (sellTokenAmount === 0) {
 			setSellTokenAmountUsd(undefined);
 		} else if (sellToken) {
-			const price = await getTokenPrice(sellToken);
-			setSellTokenAmountUsd(sellTokenAmount * price);
+			setSellTokenAmountUsd(sellTokenAmount * sellToken.price!);
 		}
 	}
 
 	async function selectSwapRoute(swapRoute: SwapRoute) {
 		if (buyToken) {
-			const price = await getTokenPrice(buyToken);
 			setBuyTokenAmount(swapRoute.outputAmount);
-			setBuyTokenAmountUsdAfterGas(swapRoute.outputAmount * price);
+			setBuyTokenAmountUsd(swapRoute.outputAmount * buyToken.price!);
 			setAggregator(swapRoute.aggregator);
 		}
 	}
@@ -141,16 +151,19 @@ export function Swap() {
 	async function doSwap() {
 		if (account && aggregator && sellToken && buyToken && address) {
 			setSwapLoading(true);
-			try {
-				if (aggregator === 'Avnu') {
-					await swapOnAvnu(sellToken, buyToken, sellTokenAmount, account, slippage);
-				} else if (aggregator === 'Fibrous') {
-					await swapOnFibrous(sellToken, buyToken, sellTokenAmount, account, slippage);
-				} else {
-					await swapOnOpenOcean(sellToken, buyToken, sellTokenAmount, account, slippage);
-				}
-			} catch (error) {
-				console.log(error);
+			let txHash = '';
+			if (aggregator === 'Avnu') {
+				txHash = await swapOnAvnu(sellToken, buyToken, sellTokenAmount, account, slippage);
+			} else if (aggregator === 'Fibrous') {
+				txHash = await swapOnFibrous(sellToken, buyToken, sellTokenAmount, account, slippage);
+			} else {
+				//await swapOnOpenOcean(sellToken, buyToken, sellTokenAmount, account, slippage);
+			}
+			const txReceipt = await account.waitForTransaction(txHash);
+			if (txReceipt.status === 'RECEIVED' || txReceipt.status === 'ACCEPTED_ON_L2') {
+				setSnackbar('success');
+			} else {
+				setSnackbar('error');
 			}
 			setSwapLoading(false);
 		}
@@ -167,6 +180,7 @@ export function Swap() {
 						<div className="input">
 							<Input
 								placeholder="0"
+								value={sellTokenAmount}
 								type="number"
 								variant="soft"
 								sx={{ '--Input-focusedThickness': 0, lineHeight: '55px', boxShadow: 'none', fontSize: '36px' }}
@@ -222,7 +236,10 @@ export function Swap() {
 							</Typography>
 							<Typography fontWeight="sm" fontSize="sm" lineHeight="28px" sx={{ marginLeft: 'auto' }} minHeight="28px">
 								{sellToken && sellTokenWalletAmount && (
-									<>Balance: {Number(Number(sellTokenWalletAmount?.formatted).toFixed(4)) === 0 ? '0' : Number(sellTokenWalletAmount?.formatted).toFixed(4)}</>
+									<>
+										Balance: {Number(Number(sellTokenWalletAmount?.formatted).toFixed(4)) === 0 ? '0' : Number(sellTokenWalletAmount?.formatted).toFixed(4)}{' '}
+										<Link onClick={() => setSellTokenAmount(Number(sellTokenWalletAmount?.formatted))}>MAX</Link>
+									</>
 								)}
 							</Typography>
 						</div>
@@ -275,13 +292,17 @@ export function Swap() {
 						</div>
 						<div className="infos">
 							<Typography fontWeight="sm" fontSize="sm" lineHeight="28px" minHeight="28px">
-								{buyTokenAmountUsdAfterGas ? (
+								{buyTokenAmountUsd ? (
 									<>
 										≈{' '}
 										{new Intl.NumberFormat('en-US', {
 											style: 'currency',
 											currency: 'USD',
-										}).format(Number(buyTokenAmountUsdAfterGas))}
+										}).format(buyTokenAmountUsd)}{' '}
+										<Typography fontWeight="sm" fontSize="sm" lineHeight="28px" minHeight="28px" color={buyTokenAmountUsd >= sellTokenAmountUsd! ? 'success' : 'danger'}>
+											({buyTokenAmountUsd >= sellTokenAmountUsd! ? '+' : '-'}
+											{pourcentageDifference(buyTokenAmountUsd, sellTokenAmountUsd!).toFixed(2)}%)
+										</Typography>
 									</>
 								) : (
 									<></>
@@ -306,7 +327,7 @@ export function Swap() {
 							sx={{ gap: 2, mb: 2, flexWrap: 'wrap', flexDirection: 'row' }}
 							onChange={handleSlippageChange}
 						>
-							{[0.1, 0.5, 1, 2, 5, 10].map((size) => (
+							{[0.1, 0.5, 1, 2, 5, 10, 20].map((size) => (
 								<Sheet
 									key={size}
 									sx={{
@@ -336,7 +357,7 @@ export function Swap() {
 						{address &&
 							aggregator &&
 							swapRoutes.length > 0 &&
-							(Number(sellTokenWalletAmount?.formatted) > sellTokenAmount ? (
+							(Number(sellTokenWalletAmount?.formatted) >= sellTokenAmount ? (
 								<Button sx={{ minHeight: '40px', width: '100%' }} onClick={() => doSwap()} loading={swapLoading}>
 									{!swapLoading && `Swap via ${aggregator}`}
 								</Button>
@@ -410,32 +431,6 @@ export function Swap() {
 										</Typography>
 									</div>
 								</ListItemButton>
-								<ListItemButton className="aggregator-route" sx={{ borderRadius: '8px', minHeight: '58px', pointerEvents: 'none', filter: 'blur(4px)' }} key="skeleton-3">
-									<img alt="logo" src={`/images/aggregator/openocean.svg`} width="80"></img>
-									<div className="output-amount">
-										<Typography fontWeight="lg" fontSize="lg">
-											4 {buyToken?.symbol}
-										</Typography>
-										<Typography fontWeight="sm" fontSize="sm" fontStyle="italic">
-											≈{' '}
-											{new Intl.NumberFormat('en-US', {
-												style: 'currency',
-												currency: 'USD',
-											}).format(222)}{' '}
-											after fees
-										</Typography>
-									</div>
-									<div className="extra-infos">
-										<Typography fontWeight="lg" fontSize="sm" color="success"></Typography>
-										<Typography fontWeight="sm" fontSize="sm" fontStyle="italic">
-											<LocalGasStation sx={{ width: '20px', height: '20px', marginRight: '2px', verticalAlign: 'sub' }}></LocalGasStation>
-											{new Intl.NumberFormat('en-US', {
-												style: 'currency',
-												currency: 'USD',
-											}).format(2.3)}
-										</Typography>
-									</div>
-								</ListItemButton>
 							</>
 						)}
 						{swapRoutes.map((swapRoute, index) => (
@@ -460,7 +455,7 @@ export function Swap() {
 											after fees
 										</Typography>
 									) : (
-										<Typography fontWeight="sm" fontSize="sm" fontStyle="italic" color="danger">
+										<Typography fontWeight="sm" fontSize="sm" fontStyle="italic" color="warning">
 											≈{' '}
 											{new Intl.NumberFormat('en-US', {
 												style: 'currency',
@@ -505,6 +500,20 @@ export function Swap() {
 				selectedToken={openTokenModal === 'buy' ? buyToken : sellToken}
 				onClose={closeTokensModal}
 			></TokensModal>
+			<Snackbar
+				variant="soft"
+				color={snackbar === 'success' ? 'success' : 'danger'}
+				size="lg"
+				open={snackbar === 'success' || snackbar === 'error'}
+				onClose={() => setSnackbar(undefined)}
+				anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+				startDecorator={snackbar === 'success' ? <Verified /> : <Error />}
+				autoHideDuration={10000}
+				onClick={() => setSnackbar(undefined)}
+				sx={{ cursor: 'pointer' }}
+			>
+				{snackbar === 'success' ? 'Swap on the way... transaction sent.' : 'Oops something went wrong... transaction failed.'}
+			</Snackbar>
 		</div>
 	);
 }

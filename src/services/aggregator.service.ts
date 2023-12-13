@@ -84,6 +84,7 @@ export const fetchOpenOcean = async (sellToken: Token, buyToken: Token, sellToke
 		outTokenAddress: buyToken.l2_token_address,
 		amount: inputAmount.toString(),
 		gasPrice: '5000000000',
+		referrer: process.env.REACT_APP_REFERER_ADDRESS || '',
 	});
 	const quote = await axios.get(`https://ethapi.openocean.finance/v1/starknet/quote?${queryParams}`);
 	const outputAmount = Number(formatUnits(quote.data.outAmount, buyToken.decimals));

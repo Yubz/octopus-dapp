@@ -2,7 +2,7 @@ import { Button, ButtonGroup, Card } from '@mui/joy';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ConnectWallet from '../connect-wallet/connect-wallet';
-import { useAccount } from '@starknet-react/core';
+import { useAccount, useConnect } from '@starknet-react/core';
 import DisconnectWallet from '../disconnect-wallet/disconnect-wallet';
 
 export interface HeaderProps {}
@@ -11,6 +11,7 @@ export function Header(headerProps: HeaderProps) {
 	const location = useLocation();
 	const navigate = useNavigate();
 	const { address, connector } = useAccount();
+	const { connect, connectors } = useConnect();
 
 	const [locationPathname, setLocationPathname] = useState('');
 	const [connectWalletOpened, setConnectWalletOpened] = useState<boolean>(false);
@@ -26,7 +27,11 @@ export function Header(headerProps: HeaderProps) {
 
 	useEffect(() => {
 		setLocationPathname(location.pathname);
-	}, [location]);
+		const lastUsedConnector = localStorage.getItem('lastUsedConnector');
+		if (lastUsedConnector) {
+			connect({ connector: connectors.find((connector) => connector.name === lastUsedConnector) });
+		}
+	}, [location, connect, connectors]);
 
 	useEffect(() => {
 		if (address) {

@@ -26,11 +26,16 @@ export function DisconnectWallet(disconnectWalletProps: DisconnectWalletProps) {
 		return address?.substring(0, 6) + '...' + address?.slice(-4);
 	}
 
+	function handleDisconnect() {
+		disconnect();
+		localStorage.removeItem('lastUsedConnector');
+	}
+
 	return (
 		<Modal open={opened} onClose={() => disconnectWalletProps.onClose()} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem 1rem' }}>
 			<ModalDialog variant="soft">
 				<DialogTitle>Wallet</DialogTitle>
-				<DialogContent sx={{ border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '8px', padding: '1rem' }}>
+				<DialogContent sx={{ border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '8px', padding: '1rem', margin: 0 }}>
 					<ModalClose variant="soft" sx={{ m: 1 }} />
 					<Typography fontWeight="md" fontSize="sm">
 						Connected with {connector?.id === 'argentX' ? 'Argent X' : 'Braavos'}
@@ -40,7 +45,7 @@ export function DisconnectWallet(disconnectWalletProps: DisconnectWalletProps) {
 					</Typography>
 				</DialogContent>
 				<DialogActions sx={{ padding: 0 }}>
-					<Button size="md" variant="soft" color="primary" onClick={() => disconnect()}>
+					<Button size="md" variant="soft" color="primary" onClick={() => handleDisconnect()}>
 						Disconnect
 					</Button>
 				</DialogActions>
