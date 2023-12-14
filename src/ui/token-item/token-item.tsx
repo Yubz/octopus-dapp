@@ -13,7 +13,7 @@ export function TokenItem(tokenItemProps: TokenItemProps) {
 	const { data } = useBalance({
 		address,
 		token: tokenItemProps.token.l2_token_address,
-		watch: true,
+		watch: false,
 	});
 
 	return (
@@ -27,7 +27,11 @@ export function TokenItem(tokenItemProps: TokenItemProps) {
 				<img
 					height="35"
 					width="35"
-					src={'https://mainnet-api.ekubo.org/tokens/' + tokenItemProps.token.l2_token_address + '/logo.svg'}
+					src={
+						tokenItemProps.token.added_by_user
+							? '/images/tokens/unknown_token.svg'
+							: 'https://mainnet-api.ekubo.org/tokens/' + tokenItemProps.token.l2_token_address + '/logo.svg'
+					}
 					alt={`${tokenItemProps.token.symbol}-logo`}
 				/>
 				<div className="token-info">

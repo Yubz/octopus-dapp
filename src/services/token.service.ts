@@ -7,6 +7,7 @@ export interface Token {
 	name: string;
 	sort_order: number;
 	symbol: string;
+	added_by_user: boolean;
 	balance?: number;
 	price?: number;
 }
@@ -19,6 +20,7 @@ export const TOKENS: Array<Token> = [
 		decimals: 8,
 		l2_token_address: '0x03fe2b97c1fd336e750087d68b9b867997fd64a2661ff3ca5a7c771641e8e7ac',
 		sort_order: -1,
+		added_by_user: false,
 	},
 	{
 		id: 'usd-coin',
@@ -27,6 +29,7 @@ export const TOKENS: Array<Token> = [
 		decimals: 6,
 		l2_token_address: '0x053c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8',
 		sort_order: 4,
+		added_by_user: false,
 	},
 	{
 		id: 'lusd',
@@ -35,6 +38,7 @@ export const TOKENS: Array<Token> = [
 		decimals: 18,
 		l2_token_address: '0x070a76fd48ca0ef910631754d77dd822147fe98a569b826ec85e3c33fde586ac',
 		sort_order: 3,
+		added_by_user: false,
 	},
 	{
 		id: 'tether',
@@ -43,6 +47,7 @@ export const TOKENS: Array<Token> = [
 		decimals: 6,
 		l2_token_address: '0x068f5c6a61780768455de69077e07e89787839bf8166decfbf92b645209c0fb8',
 		sort_order: 3,
+		added_by_user: false,
 	},
 	{
 		id: 'ethereum',
@@ -51,6 +56,7 @@ export const TOKENS: Array<Token> = [
 		decimals: 18,
 		l2_token_address: '0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7',
 		sort_order: 0,
+		added_by_user: false,
 	},
 	{
 		id: 'dai',
@@ -59,6 +65,7 @@ export const TOKENS: Array<Token> = [
 		decimals: 18,
 		l2_token_address: '0x00da114221cb83fa859dbdb4c44beeaa0bb37c7537ad5ae66fe5e0efd20e6eb3',
 		sort_order: 3,
+		added_by_user: false,
 	},
 	{
 		id: 'wrapped-steth',
@@ -67,6 +74,7 @@ export const TOKENS: Array<Token> = [
 		decimals: 18,
 		l2_token_address: '0x042b8f0484674ca266ac5d08e4ac6a3fe65bd3129795def2dca5c34ecc5f96d2',
 		sort_order: 0,
+		added_by_user: false,
 	},
 	{
 		id: 'rocket-pool-eth',
@@ -75,6 +83,7 @@ export const TOKENS: Array<Token> = [
 		decimals: 18,
 		l2_token_address: '0x0319111a5037cbec2b3e638cc34a3474e2d2608299f3e62866e9cc683208c610',
 		sort_order: 0,
+		added_by_user: false,
 	},
 	{
 		id: 'lords',
@@ -83,6 +92,7 @@ export const TOKENS: Array<Token> = [
 		decimals: 18,
 		l2_token_address: '0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49',
 		sort_order: 2,
+		added_by_user: false,
 	},
 	/*
 	{
@@ -125,13 +135,14 @@ export const TOKENS: Array<Token> = [
 		decimals: 18,
 		l2_token_address: '0x049210ffc442172463f3177147c1aeaa36c51d152c1b0630f2364c300d4f48ee',
 		sort_order: 2,
+		added_by_user: false,
 	},
 ];
 
 export const fetchTokensPrice = async (): Promise<void> => {
 	const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${TOKENS.map((token) => token.id).join(',')}&vs_currencies=usd`);
 	TOKENS.forEach((token) => {
-		token.price = response.data[token.id].usd;
+		token.price = response.data[token.id]?.usd;
 	});
 	return;
 };

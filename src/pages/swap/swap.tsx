@@ -19,6 +19,7 @@ export function Swap() {
 		address,
 		token: sellToken?.l2_token_address,
 		watch: true,
+		refetchInterval: 10000,
 	}).data;
 
 	const [buyToken, setBuyToken] = useState<Token>();
@@ -28,6 +29,7 @@ export function Swap() {
 		address,
 		token: buyToken?.l2_token_address,
 		watch: true,
+		refetchInterval: 10000,
 	}).data;
 
 	const [openTokenModal, setOpenTokenModal] = useState<'buy' | 'sell'>();
@@ -150,22 +152,26 @@ export function Swap() {
 
 	async function doSwap() {
 		if (account && aggregator && sellToken && buyToken && address) {
-			setSwapLoading(true);
-			let txHash = '';
-			if (aggregator === 'Avnu') {
-				txHash = await swapOnAvnu(sellToken, buyToken, sellTokenAmount, account, slippage);
-			} else if (aggregator === 'Fibrous') {
-				txHash = await swapOnFibrous(sellToken, buyToken, sellTokenAmount, account, slippage);
-			} else {
-				//await swapOnOpenOcean(sellToken, buyToken, sellTokenAmount, account, slippage);
+			try {
+				setSwapLoading(true);
+				let txHash = '';
+				if (aggregator === 'Avnu') {
+					txHash = await swapOnAvnu(sellToken, buyToken, sellTokenAmount, account, slippage);
+				} else if (aggregator === 'Fibrous') {
+					txHash = await swapOnFibrous(sellToken, buyToken, sellTokenAmount, account, slippage);
+				} else {
+					//await swapOnOpenOcean(sellToken, buyToken, sellTokenAmount, account, slippage);
+				}
+				const txReceipt = await account.waitForTransaction(txHash);
+				if (txReceipt.status === 'RECEIVED' || txReceipt.status === 'ACCEPTED_ON_L2') {
+					setSnackbar('success');
+				} else {
+					setSnackbar('error');
+				}
+				setSwapLoading(false);
+			} catch (error) {
+				setSwapLoading(false);
 			}
-			const txReceipt = await account.waitForTransaction(txHash);
-			if (txReceipt.status === 'RECEIVED' || txReceipt.status === 'ACCEPTED_ON_L2') {
-				setSnackbar('success');
-			} else {
-				setSnackbar('error');
-			}
-			setSwapLoading(false);
 		}
 	}
 
@@ -208,7 +214,9 @@ export function Swap() {
 											height="30"
 											width="30"
 											alt="Token logo"
-											src={'https://mainnet-api.ekubo.org/tokens/' + sellToken.l2_token_address + '/logo.svg'}
+											src={
+												sellToken.added_by_user ? '/images/tokens/unknown_token.svg' : 'https://mainnet-api.ekubo.org/tokens/' + sellToken.l2_token_address + '/logo.svg'
+											}
 										/>
 										<Typography fontWeight="lg" fontSize="lg" sx={{ display: 'flex', alignItems: 'center', color: 'inherit', marginRight: '10px' }}>
 											{sellToken.symbol}
@@ -278,7 +286,9 @@ export function Swap() {
 											height="30"
 											width="30"
 											alt="Token logo"
-											src={'https://mainnet-api.ekubo.org/tokens/' + buyToken.l2_token_address + '/logo.svg'}
+											src={
+												buyToken.added_by_user ? '/images/tokens/unknown_token.svg' : 'https://mainnet-api.ekubo.org/tokens/' + buyToken.l2_token_address + '/logo.svg'
+											}
 										/>
 										<Typography fontWeight="lg" fontSize="lg" sx={{ display: 'flex', alignItems: 'center', color: 'inherit', marginRight: '10px' }}>
 											{buyToken.symbol}
@@ -299,10 +309,20 @@ export function Swap() {
 											style: 'currency',
 											currency: 'USD',
 										}).format(buyTokenAmountUsd)}{' '}
-										<Typography fontWeight="sm" fontSize="sm" lineHeight="28px" minHeight="28px" color={buyTokenAmountUsd >= sellTokenAmountUsd! ? 'success' : 'danger'}>
-											({buyTokenAmountUsd >= sellTokenAmountUsd! ? '+' : '-'}
-											{pourcentageDifference(buyTokenAmountUsd, sellTokenAmountUsd!).toFixed(2)}%)
-										</Typography>
+										{sellTokenAmountUsd ? (
+											<Typography
+												fontWeight="sm"
+												fontSize="sm"
+												lineHeight="28px"
+												minHeight="28px"
+												color={buyTokenAmountUsd >= sellTokenAmountUsd! ? 'success' : 'danger'}
+											>
+												({buyTokenAmountUsd >= sellTokenAmountUsd! ? '+' : '-'}
+												{pourcentageDifference(buyTokenAmountUsd, sellTokenAmountUsd!).toFixed(2)}%)
+											</Typography>
+										) : (
+											''
+										)}
 									</>
 								) : (
 									<></>
@@ -445,24 +465,28 @@ export function Swap() {
 									<Typography fontWeight="lg" fontSize="lg">
 										{swapRoute.outputAmount.toFixed(4)} {buyToken?.symbol}
 									</Typography>
-									{swapRoute.gasFeesUsd > 0 ? (
-										<Typography fontWeight="sm" fontSize="sm" fontStyle="italic">
-											≈{' '}
-											{new Intl.NumberFormat('en-US', {
-												style: 'currency',
-												currency: 'USD',
-											}).format(swapRoute.outputAmountWithGasUsd)}{' '}
-											after fees
-										</Typography>
+									{swapRoute.outputAmountWithGasUsd ? (
+										swapRoute.gasFeesUsd > 0 ? (
+											<Typography fontWeight="sm" fontSize="sm" fontStyle="italic">
+												≈{' '}
+												{new Intl.NumberFormat('en-US', {
+													style: 'currency',
+													currency: 'USD',
+												}).format(swapRoute.outputAmountWithGasUsd)}{' '}
+												after fees
+											</Typography>
+										) : (
+											<Typography fontWeight="sm" fontSize="sm" fontStyle="italic" color="warning">
+												≈{' '}
+												{new Intl.NumberFormat('en-US', {
+													style: 'currency',
+													currency: 'USD',
+												}).format(swapRoute.outputAmountWithGasUsd)}{' '}
+												before fees
+											</Typography>
+										)
 									) : (
-										<Typography fontWeight="sm" fontSize="sm" fontStyle="italic" color="warning">
-											≈{' '}
-											{new Intl.NumberFormat('en-US', {
-												style: 'currency',
-												currency: 'USD',
-											}).format(swapRoute.outputAmountWithGasUsd)}{' '}
-											before fees
-										</Typography>
+										''
 									)}
 								</div>
 								<div className="extra-infos">
