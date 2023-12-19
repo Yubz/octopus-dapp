@@ -23,13 +23,14 @@ export function TokensModal(tokensModalProps: TokensModalProps) {
 	});
 
 	useEffect(() => {
-		fetchTokens();
 		// eslint-disable-next-line
 	}, []);
 
 	useEffect(() => {
 		setOpened(tokensModalProps.opened);
-	}, [tokensModalProps]);
+		fetchTokens();
+		setInputSearchToken(undefined);
+	}, [tokensModalProps.opened]);
 
 	useEffect(() => {
 		fetchTokenInfo();
@@ -42,17 +43,18 @@ export function TokensModal(tokensModalProps: TokensModalProps) {
 				const name = await contract.name();
 				const symbol = await contract.symbol();
 				const decimals = await contract.decimals();
-				if (!TOKENS.find((token) => token.l2_token_address === inputSearchToken)) {
-					const token = {
+				const storedTokens = JSON.parse(localStorage.getItem('storedTokens') || '[]');
+				if (!TOKENS.find((token) => token.l2_token_address === inputSearchToken) && !storedTokens.find((token: Token) => token.l2_token_address === inputSearchToken)) {
+					const token: Token = {
 						name: shortString.decodeShortString(name),
 						symbol: shortString.decodeShortString(symbol),
 						decimals: Number(decimals),
+						logo: '/images/tokens/unknown-token.svg',
 						l2_token_address: inputSearchToken!,
 						id: shortString.decodeShortString(name),
 						sort_order: 999,
 						added_by_user: true,
 					};
-					const storedTokens = JSON.parse(localStorage.getItem('storedTokens') || '[]');
 					storedTokens.push(token);
 					localStorage.setItem('storedTokens', JSON.stringify(storedTokens));
 				}

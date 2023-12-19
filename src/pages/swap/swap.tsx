@@ -73,12 +73,12 @@ export function Swap() {
 			if (token) {
 				if (openTokenModal === 'buy') {
 					setBuyToken(token);
-					if (token === sellToken) {
+					if (token.l2_token_address === sellToken?.l2_token_address) {
 						setSellToken(undefined);
 					}
 				} else {
 					setSellToken(token);
-					if (token === buyToken) {
+					if (token.l2_token_address === buyToken?.l2_token_address) {
 						setBuyToken(undefined);
 					}
 				}
@@ -209,15 +209,7 @@ export function Swap() {
 							>
 								{sellToken ? (
 									<div className="select-token-button">
-										<img
-											className="token-logo"
-											height="30"
-											width="30"
-											alt="Token logo"
-											src={
-												sellToken.added_by_user ? '/images/tokens/unknown_token.svg' : 'https://mainnet-api.ekubo.org/tokens/' + sellToken.l2_token_address + '/logo.svg'
-											}
-										/>
+										<img className="token-logo" height="30" width="30" alt="Token logo" src={sellToken.logo} />
 										<Typography fontWeight="lg" fontSize="lg" sx={{ display: 'flex', alignItems: 'center', color: 'inherit', marginRight: '10px' }}>
 											{sellToken.symbol}
 										</Typography>
@@ -281,15 +273,7 @@ export function Swap() {
 							>
 								{buyToken ? (
 									<div className="select-token-button">
-										<img
-											className="token-logo"
-											height="30"
-											width="30"
-											alt="Token logo"
-											src={
-												buyToken.added_by_user ? '/images/tokens/unknown_token.svg' : 'https://mainnet-api.ekubo.org/tokens/' + buyToken.l2_token_address + '/logo.svg'
-											}
-										/>
+										<img className="token-logo" height="30" width="30" alt="Token logo" src={buyToken.logo} />
 										<Typography fontWeight="lg" fontSize="lg" sx={{ display: 'flex', alignItems: 'center', color: 'inherit', marginRight: '10px' }}>
 											{buyToken.symbol}
 										</Typography>

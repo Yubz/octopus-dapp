@@ -24,16 +24,7 @@ export function TokenItem(tokenItemProps: TokenItemProps) {
 			disabled={tokenItemProps.selected}
 		>
 			<ListItemDecorator>
-				<img
-					height="35"
-					width="35"
-					src={
-						tokenItemProps.token.added_by_user
-							? '/images/tokens/unknown_token.svg'
-							: 'https://mainnet-api.ekubo.org/tokens/' + tokenItemProps.token.l2_token_address + '/logo.svg'
-					}
-					alt={`${tokenItemProps.token.symbol}-logo`}
-				/>
+				<img height="35" width="35" src={tokenItemProps.token.logo} alt={`${tokenItemProps.token.symbol}-logo`} />
 				<div className="token-info">
 					<Typography fontWeight="lg" fontSize="lg">
 						{tokenItemProps.token.symbol}
