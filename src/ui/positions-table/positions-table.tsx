@@ -44,94 +44,99 @@ export function PositionsTable(positionsTableProps: PositionsTableProps) {
 
 	return (
 		<>
-			<Table
-				hoverRow
-				variant="soft"
-				sx={{
-					borderRadius: '8px',
-					'& tr > *:not(:first-of-type)': { textAlign: 'right' },
-					backgroundColor: '#171A1C',
-				}}
-			>
-				<thead style={{ backgroundColor: '#171A1C' }}>
-					<tr>
-						<th style={{ verticalAlign: 'middle' }}>Pool</th>
-						<th style={{ verticalAlign: 'middle' }}>NFT_ID / Owner</th>
-						<th style={{ verticalAlign: 'middle' }}>PNL</th>
-						<th style={{ verticalAlign: 'middle' }}>APR</th>
-						<th style={{ verticalAlign: 'middle' }}>Fee APR</th>
-						<th style={{ verticalAlign: 'middle' }}>Value</th>
-						<th style={{ verticalAlign: 'middle' }}>Age</th>
-					</tr>
-				</thead>
-				<tbody>
-					{positions.map(
-						(position, index) =>
-							index >= currentPage * POSITIONS_PER_PAGE &&
-							index <= currentPage * POSITIONS_PER_PAGE + POSITIONS_PER_PAGE && (
-								<tr key={position.id}>
-									<td>
-										<Typography fontWeight="lg">
-											{position.token0Symbol}/{position.token1Symbol}
-										</Typography>
-										<Typography level="body-xs" fontWeight="lg">
-											{position.fee * 100}% - {position.tickSpacing * 100}%
-										</Typography>
-									</td>
-									<td>
-										<Typography fontWeight="lg">{position.id}</Typography>
-										<Typography level="body-xs" fontWeight="lg">
-											{minimizeAddress(position.owner)}
-										</Typography>
-									</td>
-									<td>
-										{new Intl.NumberFormat('en-US', {
-											style: 'currency',
-											currency: 'USD',
-										}).format(position.pnlUsd)}
-									</td>
-									<td>{(position.apr * 100).toFixed(2)}%</td>
-									<td>{(position.feeApr * 100).toFixed(2)}%</td>
-									<td>
-										{new Intl.NumberFormat('en-US', {
-											style: 'currency',
-											currency: 'USD',
-										}).format(position.amountUsd)}
-									</td>
-									<td>
-										<Typography level="body-xs" fontWeight="lg">
-											{position.durationInDays.toFixed(2)} days
-										</Typography>
-									</td>
-								</tr>
-							),
-					)}
-				</tbody>
-				<tfoot>
-					<tr>
-						<td
-							colSpan={7}
-							style={{
-								borderBottomLeftRadius: '8px',
-								borderBottomRightRadius: '8px',
-							}}
-						>
-							<Box
-								sx={{
-									display: 'flex',
-									alignItems: 'center',
-									gap: 2,
-									justifyContent: 'center',
+			{positions.length > 0 && (
+				<Table
+					hoverRow
+					variant="soft"
+					sx={{
+						borderRadius: '8px',
+						'& tr > *:not(:first-of-type)': { textAlign: 'right' },
+						backgroundColor: 'rgba(0,0,0,0.4)',
+						'--TableRow-hoverBackground': 'rgba(1,1,1,0.4)',
+						'--Table-headerUnderlineThickness': '1px',
+					}}
+				>
+					<thead style={{ backgroundColor: 'transparent' }}>
+						<tr>
+							<th style={{ verticalAlign: 'middle', backgroundColor: 'transparent' }}>Pool</th>
+							<th style={{ verticalAlign: 'middle', backgroundColor: 'transparent' }}>NFT_ID / Owner</th>
+							<th style={{ verticalAlign: 'middle', backgroundColor: 'transparent' }}>PNL</th>
+							<th style={{ verticalAlign: 'middle', backgroundColor: 'transparent' }}>APR</th>
+							<th style={{ verticalAlign: 'middle', backgroundColor: 'transparent' }}>Fee APR</th>
+							<th style={{ verticalAlign: 'middle', backgroundColor: 'transparent' }}>Value</th>
+							<th style={{ verticalAlign: 'middle', backgroundColor: 'transparent' }}>Age</th>
+						</tr>
+					</thead>
+					<tbody>
+						{positions.map(
+							(position, index) =>
+								index >= currentPage * POSITIONS_PER_PAGE &&
+								index <= currentPage * POSITIONS_PER_PAGE + POSITIONS_PER_PAGE && (
+									<tr key={position.id}>
+										<td>
+											<Typography fontWeight="lg">
+												{position.token0Symbol}/{position.token1Symbol}
+											</Typography>
+											<Typography level="body-xs" fontWeight="lg">
+												{position.fee * 100}% - {position.tickSpacing * 100}%
+											</Typography>
+										</td>
+										<td>
+											<Typography fontWeight="lg">{position.id}</Typography>
+											<Typography level="body-xs" fontWeight="lg">
+												{minimizeAddress(position.owner)}
+											</Typography>
+										</td>
+										<td>
+											{new Intl.NumberFormat('en-US', {
+												style: 'currency',
+												currency: 'USD',
+											}).format(position.pnlUsd)}
+										</td>
+										<td>{(position.apr * 100).toFixed(2)}%</td>
+										<td>{(position.feeApr * 100).toFixed(2)}%</td>
+										<td>
+											{new Intl.NumberFormat('en-US', {
+												style: 'currency',
+												currency: 'USD',
+											}).format(position.amountUsd)}
+										</td>
+										<td>
+											<Typography level="body-xs" fontWeight="lg">
+												{position.durationInDays.toFixed(2)} days
+											</Typography>
+										</td>
+									</tr>
+								),
+						)}
+					</tbody>
+					<tfoot>
+						<tr>
+							<td
+								colSpan={7}
+								style={{
+									borderBottomLeftRadius: '8px',
+									borderBottomRightRadius: '8px',
+									backgroundColor: 'transparent',
 								}}
 							>
-								<Box sx={{ display: 'flex', gap: 1 }}>
-									<Pagination variant="outlined" count={numberOfPages} onChange={pageChange} shape="rounded" color="primary" />
+								<Box
+									sx={{
+										display: 'flex',
+										alignItems: 'center',
+										gap: 2,
+										justifyContent: 'center',
+									}}
+								>
+									<Box sx={{ display: 'flex', gap: 1 }}>
+										<Pagination variant="outlined" count={numberOfPages} onChange={pageChange} shape="rounded" color="primary" />
+									</Box>
 								</Box>
-							</Box>
-						</td>
-					</tr>
-				</tfoot>
-			</Table>
+							</td>
+						</tr>
+					</tfoot>
+				</Table>
+			)}
 		</>
 	);
 }

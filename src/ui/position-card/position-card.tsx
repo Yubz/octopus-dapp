@@ -7,6 +7,7 @@ const Item = styled(Sheet)(({ theme }) => ({
 	//textAlign: 'center',
 	alignItems: 'center',
 	justifyContent: 'center',
+	backgroundColor: 'transparent',
 	//fontWeight: theme.fontWeight.md,
 	//color: theme.vars.palette.text.secondary,
 	//borderColor: theme.palette.divider,
@@ -53,6 +54,7 @@ export function PositionCard(positionCardProps: PositionCardProps) {
 			sx={{
 				border: '1px solid',
 				borderColor: positionCardProps.inRange ? '#0AD85E' : '#FF2E60',
+				backgroundColor: 'rgba(0, 0, 0, 0.4)',
 			}}
 		>
 			<CardOverflow

@@ -19,6 +19,7 @@ export function ConnectWallet(connectWalletProps: ConnectWalletProps) {
 	function connectWallet(connector: Connector) {
 		if (connector.available()) {
 			connect({ connector });
+			localStorage.setItem('lastUsedConnector', connector.name);
 		} else {
 			if (connector.name === 'argentX') {
 				window.open('https://www.argent.xyz', '_blank');

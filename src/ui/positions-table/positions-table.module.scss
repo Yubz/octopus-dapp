@@ -1,12 +1,16 @@
 table {
-    thead {
-        tr:first-child {
-            th:first-child {
-                border-top-left-radius: 8px;
-            }
-            th:last-child {
-                border-top-right-radius: 8px;
-            }
-        }
-    }
+	thead {
+		background-color: transparent;
+		tr:first-child {
+			th:first-child {
+				border-top-left-radius: 8px;
+			}
+			th:last-child {
+				border-top-right-radius: 8px;
+			}
+		}
+	}
+	tfoot {
+		background-color: transparent;
+	}
 }

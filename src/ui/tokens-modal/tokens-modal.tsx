@@ -23,13 +23,10 @@ export function TokensModal(tokensModalProps: TokensModalProps) {
 	});
 
 	useEffect(() => {
-		// eslint-disable-next-line
-	}, []);
-
-	useEffect(() => {
 		setOpened(tokensModalProps.opened);
 		fetchTokens();
 		setInputSearchToken(undefined);
+		// eslint-disable-next-line
 	}, [tokensModalProps.opened]);
 
 	useEffect(() => {

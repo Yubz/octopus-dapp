@@ -383,7 +383,11 @@ export function Swap() {
 					<List sx={{ gap: '10px', '--ListDivider-gap': 0 }}>
 						{quoteLoading && (
 							<>
-								<ListItemButton className="aggregator-route" sx={{ borderRadius: '8px', minHeight: '58px', pointerEvents: 'none', filter: 'blur(4px)' }} key="skeleton-1">
+								<ListItemButton
+									className="aggregator-route loading"
+									sx={{ borderRadius: '8px', minHeight: '58px', pointerEvents: 'none', filter: 'blur(4px)' }}
+									key="skeleton-1"
+								>
 									<img alt="logo" src={`/images/aggregator/avnu.svg`} width="80"></img>
 									<div className="output-amount">
 										<Typography fontWeight="lg" fontSize="lg">
@@ -409,7 +413,11 @@ export function Swap() {
 										</Typography>
 									</div>
 								</ListItemButton>
-								<ListItemButton className="aggregator-route" sx={{ borderRadius: '8px', minHeight: '58px', pointerEvents: 'none', filter: 'blur(4px)' }} key="skeleton-2">
+								<ListItemButton
+									className="aggregator-route loading"
+									sx={{ borderRadius: '8px', minHeight: '58px', pointerEvents: 'none', filter: 'blur(4px)' }}
+									key="skeleton-2"
+								>
 									<img alt="logo" src={`/images/aggregator/fibrous.svg`} width="80"></img>
 									<div className="output-amount">
 										<Typography fontWeight="lg" fontSize="lg">

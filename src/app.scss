@@ -4,9 +4,10 @@
 }
 
 .Mui-selected {
-	background-color: #76afcc !important;
+	background: linear-gradient(93deg, rgba(56, 145, 166, 1), rgba(146, 88, 166, 1)) !important;
+	background-clip: 'text' !important;
+	-webkit-text-fill-color: 'transparent' !important;
 	color: #171a1c !important;
-
 	&.hover {
 		background-color: #76afcc !important;
 		color: #171a1c !important;
@@ -19,5 +20,16 @@
 		color: #171a1c !important;
 		pointer-events: unset !important;
 		opacity: 0.4 !important;
+	}
+}
+
+.loading {
+	pointer-events: none;
+	filter: blur(4px);
+	animation: fadeIn 1s infinite alternate;
+	@keyframes fadeIn {
+		from {
+			opacity: 0.4;
+		}
 	}
 }
