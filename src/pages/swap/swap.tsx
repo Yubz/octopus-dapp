@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Button, Card, CardContent, CardOverflow, Input, Link, List, ListItemButton, Radio, RadioGroup, Sheet, Snackbar, Typography } from '@mui/joy';
-import { KeyboardArrowDown, ImportExport, LocalGasStation, Verified, Error } from '@mui/icons-material';
+import { KeyboardArrowDown, ImportExport, LocalGasStation, Verified } from '@mui/icons-material';
 import ConnectWallet from '../../ui/connect-wallet/connect-wallet';
 import { useAccount, useBalance } from '@starknet-react/core';
 import TokensModal from '../../ui/tokens-modal/tokens-modal';
 import { useDebounce } from 'use-debounce';
 import { SwapRoute, fetchAvnu, fetchFibrous, swapOnAvnu, swapOnFibrous } from '../../services/aggregator.service';
 import { Token, fetchTokensPrice } from '../../services/token.service';
+import { GetTransactionReceiptResponse, RevertedTransactionReceiptResponse, SuccessfulTransactionReceiptResponse } from 'starknet';
 
 export function Swap() {
 	const { address, account } = useAccount();
@@ -34,7 +35,7 @@ export function Swap() {
 
 	const [openTokenModal, setOpenTokenModal] = useState<'buy' | 'sell'>();
 	const [connectWalletOpened, setConnectWalletOpened] = useState<boolean>(false);
-	const [snackbar, setSnackbar] = useState<'success' | 'error'>();
+	const [snackbarOpened, setSnackbarOpened] = useState<boolean>(false);
 
 	const [swapRoutes, setSwapRoutes] = useState<Array<SwapRoute>>([]);
 	const [aggregator, setAggregator] = useState<'Fibrous' | 'Avnu' | 'OpenOcean'>();
@@ -162,11 +163,12 @@ export function Swap() {
 				} else {
 					//await swapOnOpenOcean(sellToken, buyToken, sellTokenAmount, account, slippage);
 				}
-				const txReceipt = await account.waitForTransaction(txHash);
-				if (txReceipt.status === 'RECEIVED' || txReceipt.status === 'ACCEPTED_ON_L2') {
-					setSnackbar('success');
-				} else {
-					setSnackbar('error');
+				let txReceipt = (await account.waitForTransaction(txHash)) as GetTransactionReceiptResponse;
+				if (txReceipt.hasOwnProperty('execution_status')) {
+					txReceipt = txReceipt as SuccessfulTransactionReceiptResponse | RevertedTransactionReceiptResponse;
+					if (txReceipt.execution_status === 'SUCCEEDED') {
+						setSnackbarOpened(true);
+					}
 				}
 				setSwapLoading(false);
 			} catch (error) {
@@ -518,17 +520,17 @@ export function Swap() {
 			></TokensModal>
 			<Snackbar
 				variant="soft"
-				color={snackbar === 'success' ? 'success' : 'danger'}
+				color={'success'}
 				size="lg"
-				open={snackbar === 'success' || snackbar === 'error'}
-				onClose={() => setSnackbar(undefined)}
+				open={snackbarOpened}
+				onClose={() => setSnackbarOpened(false)}
 				anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-				startDecorator={snackbar === 'success' ? <Verified /> : <Error />}
+				startDecorator={<Verified />}
 				autoHideDuration={10000}
-				onClick={() => setSnackbar(undefined)}
+				onClick={() => setSnackbarOpened(false)}
 				sx={{ cursor: 'pointer' }}
 			>
-				{snackbar === 'success' ? 'Swap on the way... transaction sent.' : 'Oops something went wrong... transaction failed.'}
+				Swap executed successfully!
 			</Snackbar>
 		</div>
 	);
