@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Button, Card, CardContent, CardOverflow, Input, Link, List, ListItemButton, Radio, RadioGroup, Sheet, Snackbar, Typography } from '@mui/joy';
-import { KeyboardArrowDown, ImportExport, LocalGasStation, Verified } from '@mui/icons-material';
+import { KeyboardArrowDown, ImportExport, LocalGasStation, Verified, Refresh } from '@mui/icons-material';
 import ConnectWallet from '../../ui/connect-wallet/connect-wallet';
 import { useAccount, useBalance } from '@starknet-react/core';
 import TokensModal from '../../ui/tokens-modal/tokens-modal';
@@ -247,11 +247,37 @@ export function Swap() {
 						</div>
 					</div>
 					<Button
-						style={{ position: 'absolute', display: 'inline-flex', margin: 'auto', inset: '0px', width: '2.25rem', height: '2.25rem' }}
+						style={{
+							position: 'absolute',
+							display: 'inline-flex',
+							margin: 'auto',
+							inset: '0px',
+							width: '2.25rem',
+							height: '2.25rem',
+							right: swapRoutes.length > 0 ? '5rem' : '0',
+						}}
 						onClick={() => switchToken()}
 					>
 						<ImportExport></ImportExport>
 					</Button>
+					{swapRoutes.length > 0 && (
+						<Button
+							style={{
+								position: 'absolute',
+								display: 'inline-flex',
+								margin: 'auto',
+								inset: '0px',
+								width: '2.25rem',
+								height: '2.25rem',
+								left: swapRoutes.length > 0 ? '5rem' : '0',
+							}}
+							onClick={() => {
+								fetchAggrQuotes();
+							}}
+						>
+							<Refresh />
+						</Button>
+					)}
 					<div className="buy-token-bloc">
 						<Typography fontWeight="sm" fontSize="sm" lineHeight="28px" sx={{ marginBottom: '10px' }}>
 							Buying
