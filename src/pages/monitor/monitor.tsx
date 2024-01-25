@@ -5,6 +5,7 @@ import PositionCard from '../../ui/position-card/position-card';
 import { getPositionsByAddress } from '../../services/position.service';
 import { PositionCardDto } from '../../dto/position-card.dto';
 import { useAccount } from '@starknet-react/core';
+import { useSearchParams } from 'react-router-dom';
 
 export function Monitor() {
 	const [positionCards, setPositionCards] = useState<Array<PositionCardDto>>([]);
@@ -12,9 +13,12 @@ export function Monitor() {
 	const [loading, setLoading] = useState<boolean>(false);
 
 	const { address } = useAccount();
+	const [searchParams] = useSearchParams();
 
 	useEffect(() => {
-		if (address) {
+		if (searchParams) {
+			setInputAddress(searchParams.get('address') || '');
+		} else if (address) {
 			setInputAddress(address);
 		}
 	}, [address]);

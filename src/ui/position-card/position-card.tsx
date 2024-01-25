@@ -76,7 +76,8 @@ export function PositionCard(positionCardProps: PositionCardProps) {
 					</Typography>
 					<Divider orientation="vertical" />
 					<Typography fontWeight="md" lineHeight="28px">
-						<Straighten style={{ height: '28px', verticalAlign: 'bottom' }} /> {positionCardProps.tickSpacing * 100}%
+						<Straighten style={{ height: '28px', verticalAlign: 'bottom' }} />{' '}
+						{positionCardProps.tickSpacing * 100 > 1 ? Math.round(positionCardProps.tickSpacing * 100) : positionCardProps.tickSpacing * 100}%
 					</Typography>
 					<Divider orientation="vertical" />
 					<Typography fontWeight="md" lineHeight="28px">
@@ -166,8 +167,7 @@ export function PositionCard(positionCardProps: PositionCardProps) {
 				<Divider />
 				<Grid container spacing={2} sx={{ flexGrow: 1 }}>
 					<Grid xs={4}></Grid>
-					<Grid xs={2}></Grid>
-					<Grid xs={2}>
+					<Grid xs={3}>
 						<Item variant="soft">
 							<Typography level="body-xs" fontWeight="lg">
 								Current assets
@@ -180,7 +180,7 @@ export function PositionCard(positionCardProps: PositionCardProps) {
 							</Typography>
 						</Item>
 					</Grid>
-					<Grid xs={2}>
+					<Grid xs={3}>
 						<Item variant="soft">
 							<Typography level="body-xs" fontWeight="lg">
 								Invested assets

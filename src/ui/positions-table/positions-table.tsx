@@ -1,6 +1,7 @@
-import { Table, Box, Typography } from '@mui/joy';
+import { Table, Box, Typography, Link } from '@mui/joy';
 import { useEffect, useState } from 'react';
 import Pagination from '@mui/material/Pagination';
+import { useNavigate } from 'react-router-dom';
 
 export interface PositionsTableProps {
 	positions: Array<PositionRowProps>;
@@ -27,6 +28,7 @@ export function PositionsTable(positionsTableProps: PositionsTableProps) {
 	const [positions, setPositions] = useState<Array<PositionRowProps>>([]);
 	const [currentPage, setCurrentPage] = useState<number>(0);
 	const [numberOfPages, setNumberOfPages] = useState<number>(0);
+	const navigate = useNavigate();
 
 	useEffect(() => {
 		setCurrentPage(0);
@@ -78,13 +80,20 @@ export function PositionsTable(positionsTableProps: PositionsTableProps) {
 												{position.token0Symbol}/{position.token1Symbol}
 											</Typography>
 											<Typography level="body-xs" fontWeight="lg">
-												{position.fee * 100}% - {position.tickSpacing * 100}%
+												{position.fee * 100}% - {position.tickSpacing * 100 > 1 ? Math.round(position.tickSpacing * 100) : position.tickSpacing * 100}%
 											</Typography>
 										</td>
 										<td>
-											<Typography fontWeight="lg">{position.id}</Typography>
+											<Typography fontWeight="lg">
+												<Link
+													target="_blank"
+													href={'https://app.ekubo.org/positions/0x534e5f4d41494e/0x02e0af29598b407c8716b17f6d2795eca1b471413fa03fb145a5e33722184067/' + position.id}
+												>
+													{position.id}
+												</Link>
+											</Typography>
 											<Typography level="body-xs" fontWeight="lg">
-												{minimizeAddress(position.owner)}
+												<Link onClick={() => navigate('/monitor?address=' + position.owner)}>{minimizeAddress(position.owner)}</Link>
 											</Typography>
 										</td>
 										<td>
