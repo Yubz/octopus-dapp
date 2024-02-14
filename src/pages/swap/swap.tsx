@@ -586,7 +586,7 @@ export function Swap() {
 						</Typography>
 						<AccordionGroup sx={{ marginTop: '8px' }}>
 							<Accordion>
-								<AccordionSummary>
+								<AccordionSummary sx={{ padding: '10px' }}>
 									<Typography fontWeight="lg" fontSize="md">
 										Are there any fees associated with using OctoSwap?
 									</Typography>
@@ -603,7 +603,7 @@ export function Swap() {
 								</AccordionDetails>
 							</Accordion>
 							<Accordion>
-								<AccordionSummary>
+								<AccordionSummary sx={{ padding: '10px' }}>
 									<Typography fontWeight="lg" fontSize="md">
 										Is it safe?
 									</Typography>
@@ -616,7 +616,7 @@ export function Swap() {
 								</AccordionDetails>
 							</Accordion>
 							<Accordion>
-								<AccordionSummary>
+								<AccordionSummary sx={{ padding: '10px' }}>
 									<Typography fontWeight="lg" fontSize="md">
 										Does swapping through OctoSwap qualify me for aggregator airdrops?
 									</Typography>
