@@ -1,6 +1,6 @@
 import { Button, ButtonGroup, Card } from '@mui/joy';
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import ConnectWallet from '../connect-wallet/connect-wallet';
 import { useAccount, useConnect } from '@starknet-react/core';
 import DisconnectWallet from '../disconnect-wallet/disconnect-wallet';
@@ -9,10 +9,11 @@ export interface HeaderProps {}
 
 export function Header(headerProps: HeaderProps) {
 	const location = useLocation();
-	const navigate = useNavigate();
+	//const navigate = useNavigate();
 	const { address, connector } = useAccount();
 	const { connect, connectors } = useConnect();
 
+	// eslint-disable-next-line
 	const [locationPathname, setLocationPathname] = useState('');
 	const [connectWalletOpened, setConnectWalletOpened] = useState<boolean>(false);
 	const [disconnectWalletOpened, setDisconnectWalletOpened] = useState<boolean>(false);
@@ -55,11 +56,14 @@ export function Header(headerProps: HeaderProps) {
 
 	return (
 		<>
-			<div className="header-content">
-				<Link to="/">
-					<img src="/images/octopus.png" alt="logo" width="80px" />
+			<div className="header-content" style={{ marginTop: '20px' }}>
+				<Link to="/" style={{ textDecoration: 'none', color: 'GrayText', position: 'relative', width: '100%' }}>
+					<h2 style={{ display: 'flex', alignItems: 'center', fontSize: '50px', marginTop: 0, marginBottom: 0 }}>
+						<img src="/images/octoswap.png" alt="logo" width="60px" />
+						<span className="app-title">OctoSwap</span>
+					</h2>
 				</Link>
-				<Card
+				{/* <Card
 					size="sm"
 					variant="soft"
 					sx={{
@@ -99,7 +103,7 @@ export function Header(headerProps: HeaderProps) {
 							Swap
 						</Button>
 					</ButtonGroup>
-				</Card>
+				</Card> */}
 				<Card
 					size="sm"
 					variant="soft"
@@ -113,7 +117,7 @@ export function Header(headerProps: HeaderProps) {
 					}}
 				>
 					<ButtonGroup size="lg" spacing="0.5rem">
-						<Button size="md" variant="soft" color="primary" onClick={() => handleWallet()}>
+						<Button size="lg" variant="soft" color="primary" onClick={() => handleWallet()} sx={{ minWidth: 'max-content' }}>
 							{address ? minimizeAddress(address) : 'Connect Wallet'}
 						</Button>
 					</ButtonGroup>

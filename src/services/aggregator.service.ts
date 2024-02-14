@@ -19,6 +19,9 @@ export const fetchAvnu = async (sellToken: Token, buyToken: Token, sellTokenAmou
 		sellTokenAddress: sellToken.l2_token_address,
 		buyTokenAddress: buyToken.l2_token_address,
 		sellAmount: BigNumber.from(parseUnits(sellTokenAmount.toString(), sellToken.decimals)).toBigInt(),
+		integratorFeeRecipient: process.env.REACT_APP_REFERER_ADDRESS,
+		integratorFees: BigInt(0), // no fees // BigInt(process.env.REACT_APP_REFERER_ADDRESS || 0)
+		integratorName: 'OctoSwap',
 	};
 	const avnuQuotes = await fetchQuotes(params);
 	const outputAmount = Number(formatUnits(avnuQuotes[0].buyAmount, buyToken.decimals));
@@ -39,8 +42,8 @@ export const swapOnAvnu = async (sellToken: Token, buyToken: Token, sellTokenAmo
 		sellAmount: BigNumber.from(parseUnits(sellTokenAmount.toString(), sellToken.decimals)).toBigInt(),
 		takerAddress: account.address,
 		integratorFeeRecipient: process.env.REACT_APP_REFERER_ADDRESS,
-		integratorFees: BigInt(0), // no fees BigInt(process.env.REACT_APP_REFERER_ADDRESS || 0)
-		integratorName: 'Octopoid',
+		integratorFees: BigInt(0), // no fees // BigInt(process.env.REACT_APP_REFERER_ADDRESS || 0)
+		integratorName: 'OctoSwap',
 	};
 	const avnuQuotes = await fetchQuotes(params);
 	return (await executeSwap(account, avnuQuotes[0], { slippage: slippage / 100 })).transactionHash;

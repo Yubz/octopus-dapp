@@ -1,5 +1,6 @@
 .quote-card,
-.routes-card {
+.routes-card,
+.faq-card {
 	width: 45%;
 	background-color: rgba(0, 0, 0, 0) !important;
 }
@@ -7,7 +8,8 @@
 .sell-token-bloc,
 .buy-token-bloc,
 .slippage-bloc,
-.actions-bloc {
+.actions-bloc,
+.faq-bloc {
 	border-radius: 8px;
 	padding: 16px;
 	border: 1px solid rgba(255, 255, 255, 0.2);
@@ -31,6 +33,12 @@
 			&.Mui-checked {
 				background: linear-gradient(93deg, rgba(56, 145, 166, 1), rgba(146, 88, 166, 1)) border-box;
 			}
+		}
+	}
+
+	.MuiAccordionSummary-button {
+		&:hover {
+			background-color: rgba(0, 0, 0, 0) !important;
 		}
 	}
 
@@ -60,7 +68,7 @@
 }
 
 .output-amount {
-	margin-left: 80px;
+	margin-left: auto;
 }
 
 .routes-card {

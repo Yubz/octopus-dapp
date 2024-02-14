@@ -1,8 +1,22 @@
-.header-content {
-    display: flex;
-    flex-direction: row;
+@font-face {
+	font-family: 'Rocher';
+	src: url(https://assets.codepen.io/9632/RocherColorGX.woff2);
+}
+@font-palette-values --Mint {
+	font-family: Rocher;
+	base-palette: 7;
+}
 
-    img {
-        margin-right: 12px;
-    }
+.header-content {
+	display: flex;
+	flex-direction: row;
+
+	img {
+		margin-right: 12px;
+	}
+
+	.app-title {
+		font-family: 'Rocher';
+		font-palette: --Mint;
+	}
 }
