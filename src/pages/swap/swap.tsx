@@ -647,7 +647,7 @@ export function Swap() {
 								</AccordionSummary>
 								<AccordionDetails sx={{ textAlign: 'center' }}>
 									<Typography fontWeight="sm" fontSize="sm">
-										https://warpcast.com/yubz or https://twitter.com/Yuuubzzz
+										<a href="https://warpcast.com/yubz">https://warpcast.com/yubz</a> or <a href="https://twitter.com/Yuuubzzz">https://twitter.com/Yuuubzzz</a>
 									</Typography>
 								</AccordionDetails>
 							</Accordion>
