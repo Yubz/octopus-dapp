@@ -2,7 +2,7 @@ import { Button, ButtonGroup, Card } from '@mui/joy';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import ConnectWallet from '../connect-wallet/connect-wallet';
-import { useAccount, useConnect } from '@starknet-react/core';
+import { useAccount, useConnect, useStarkProfile } from '@starknet-react/core';
 import DisconnectWallet from '../disconnect-wallet/disconnect-wallet';
 
 export interface HeaderProps {}
@@ -11,6 +11,7 @@ export function Header(headerProps: HeaderProps) {
 	const location = useLocation();
 	//const navigate = useNavigate();
 	const { address, connector } = useAccount();
+	const { data } = useStarkProfile({ address });
 	const { connect, connectors } = useConnect();
 
 	// eslint-disable-next-line
@@ -42,11 +43,13 @@ export function Header(headerProps: HeaderProps) {
 		}
 	}, [address]);
 
-	function minimizeAddress(address: string): string {
-		return address.substring(0, 6) + '...' + address.slice(-4);
+	function handleWalletLabel(): string {
+		if (data?.name) return data.name;
+		else if (address) return address.substring(0, 6) + '...' + address.slice(-4);
+		else return 'Connect Wallet';
 	}
 
-	function handleWallet() {
+	function handleWalletAction() {
 		if (address) {
 			setDisconnectWalletOpened(true);
 		} else {
@@ -117,8 +120,8 @@ export function Header(headerProps: HeaderProps) {
 					}}
 				>
 					<ButtonGroup size="lg" spacing="0.5rem">
-						<Button size="lg" variant="soft" color="primary" onClick={() => handleWallet()} sx={{ minWidth: 'max-content' }}>
-							{address ? minimizeAddress(address) : 'Connect Wallet'}
+						<Button size="lg" variant="soft" color="primary" onClick={() => handleWalletAction()} sx={{ minWidth: 'max-content' }}>
+							{handleWalletLabel()}
 						</Button>
 					</ButtonGroup>
 				</Card>
