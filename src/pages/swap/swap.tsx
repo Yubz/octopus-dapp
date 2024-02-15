@@ -218,7 +218,7 @@ export function Swap() {
 								<Button
 									variant="soft"
 									sx={{
-										minWidth: '160px',
+										minWidth: '180px',
 										padding: '12px',
 										marginLeft: 'auto',
 										background: 'rgba(0, 0, 0, 0.4)',
@@ -302,11 +302,17 @@ export function Swap() {
 								Buying
 							</Typography>
 							<div className="input">
-								<Input placeholder="0" type="number" variant="soft" disabled value={buyTokenAmount} sx={{ lineHeight: '55px', boxShadow: 'none', fontSize: '36px' }} />
+								<Input
+									placeholder="0"
+									variant="soft"
+									disabled
+									value={new Intl.NumberFormat('en-us', { minimumFractionDigits: 4 }).format(buyTokenAmount)}
+									sx={{ lineHeight: '55px', boxShadow: 'none', fontSize: '36px' }}
+								/>
 								<Button
 									variant="soft"
 									sx={{
-										minWidth: '160px',
+										minWidth: '180px',
 										padding: '12px',
 										marginLeft: 'auto',
 										background: 'rgba(0, 0, 0, 0.4)',
@@ -502,7 +508,7 @@ export function Swap() {
 									<img alt="logo" src={`/images/aggregator/${swapRoute.aggregator.toLocaleLowerCase()}.svg`} width="80"></img>
 									<div className="output-amount">
 										<Typography fontWeight="lg" fontSize="lg">
-											{swapRoute.outputAmount.toFixed(4)} {buyToken?.symbol}
+											{new Intl.NumberFormat('en-us', { minimumFractionDigits: 4 }).format(swapRoute.outputAmount)} {buyToken?.symbol}
 										</Typography>
 										{swapRoute.outputAmountWithGasUsd ? (
 											swapRoute.gasFeesUsd > 0 ? (
@@ -528,7 +534,7 @@ export function Swap() {
 											''
 										)}
 									</div>
-									<div className="extra-infos">
+									<div className="extra-infos" style={{ minWidth: '60px' }}>
 										{swapRoute.gasFeesUsd ? (
 											index === 0 ? (
 												<Typography fontWeight="lg" fontSize="sm" color="success">
@@ -549,7 +555,7 @@ export function Swap() {
 														style: 'currency',
 														currency: 'USD',
 												  }).format(Number(swapRoute.gasFeesUsd.toFixed(4)))
-												: 'Unknown'}{' '}
+												: '???'}{' '}
 										</Typography>
 									</div>
 								</ListItemButton>
