@@ -616,8 +616,8 @@ export function Swap() {
 								</AccordionSummary>
 								<AccordionDetails sx={{ textAlign: 'center' }}>
 									<Typography fontWeight="sm" fontSize="sm">
-										Our aggregator operates by utilizing the router contracts of each respective aggregator; we do not employ any contracts developed in-house. As a
-										result, you benefit from the same level of security as if you were swapping directly through their user interface, rather than ours.
+										OctoSwap operates by utilizing the router contracts of each respective aggregator; we do not employ any contracts developed in-house. As a result, you
+										benefit from the same level of security as if you were swapping directly through their user interface, rather than ours.
 									</Typography>
 								</AccordionDetails>
 							</Accordion>
@@ -629,13 +629,25 @@ export function Swap() {
 								</AccordionSummary>
 								<AccordionDetails sx={{ textAlign: 'center' }}>
 									<Typography fontWeight="sm" fontSize="sm">
-										Our swaps are carried out directly through the router of each aggregator, ensuring no distinction between conducting a swap directly from their
-										interface and executing one through OctoSwap.
+										Swaps are carried out directly through the router of each aggregator, ensuring no distinction between conducting a swap directly from their interface
+										and executing one through OctoSwap.
 									</Typography>
 									<br></br>
 									<Typography fontWeight="sm" fontSize="sm">
 										Therefore, should any of the aggregators we incorporate conduct an airdrop in the future, all transactions made through them via our platform will
 										qualify for their airdrop.
+									</Typography>
+								</AccordionDetails>
+							</Accordion>
+							<Accordion>
+								<AccordionSummary sx={{ padding: '10px' }}>
+									<Typography fontWeight="lg" fontSize="md">
+										I runned into an issue, how can I contact OctoSwap?
+									</Typography>
+								</AccordionSummary>
+								<AccordionDetails sx={{ textAlign: 'center' }}>
+									<Typography fontWeight="sm" fontSize="sm">
+										https://warpcast.com/yubz or https://twitter.com/Yuuubzzz
 									</Typography>
 								</AccordionDetails>
 							</Accordion>
